@@ -17,7 +17,11 @@ Claude Certified Architect – Foundations exam. Prefer clarity and explained tr
 - Apps depend on `core`/`ai`/`adapters`; packages never import from apps.
 
 ## Commands
-Commands are added after scaffolding. Expected: `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`.
+Node 24 (`.nvmrc`). Run from the repo root:
+- `npm run dev` – web app
+- `npm run typecheck` / `npm run lint` / `npm run test` / `npm run build` – same steps as CI, across all workspaces
+- `npm run test -w @toynest/core` – one workspace
+Dependencies are pinned to exact versions; never use `^` ranges.
 
 ## Conventions
 - TypeScript strict; no `any`. Validate every external boundary (HTTP, DB rows, LLM output, MCP input) with Zod.

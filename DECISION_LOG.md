@@ -37,6 +37,13 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
 - **Alternatives:** Raw API only (more code, misses SDK concepts); SDK only (hides the loop mechanics).
 - **Consequences:** Extra dependency; `packages/ai` wraps the SDK behind `AIProvider` so business logic stays decoupled.
 
+## ADR-007 · Runtime and toolchain versions
+- **Date:** 1 Nov 2026 · **Status:** Accepted
+- **Context:** Node 20 reached end of life (Apr 2026); Vitest 5 and jsdom 30 require Node 22+. TypeScript 7 is not yet supported by typescript-eslint (<6.1). eslint-config-next 16.4.3's bundled plugins (react, jsx-a11y, import) support ESLint ≤9.
+- **Decision:** Node 24 LTS (`.nvmrc`), TypeScript 6.0.3, ESLint 9.39.5, exact-pinned dependencies.
+- **Accepted risk:** 16 moderate `npm audit` findings, all from one advisory (minimatch <11 ReDoS, GHSA-g3hv-75wg-m249) in the dev-only ESLint tree. Exploitation needs attacker-controlled glob patterns; ours are fixed in config. npm's suggested fix is a breaking downgrade. Revisit when eslint-config-next supports ESLint 10.
+- **Consequences:** CI uses `node-version-file: .nvmrc`. `typecheck` runs `next typegen` first because Next 16 generates route types (e.g. `LayoutProps`).
+
 ## ADR-004 · Ports & adapters for external providers
 - **Date:** 31 Oct 2026 · **Status:** Accepted
 - **Context:** Avoid coupling business logic to Supabase, Anthropic or payment vendors.
