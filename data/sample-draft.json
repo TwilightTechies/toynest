@@ -1,0 +1,31 @@
+{
+  "_note": "Example draft for the admin review page, modelled on the Day 2 coordinator demo. Synthetic; not a live model result.",
+  "brief": {
+    "name": "Wooden Alphabet Puzzle",
+    "details": "Age group: 3-6. Material: wood. Colourful wooden alphabet puzzle."
+  },
+  "outcome": {
+    "status": "needs_review",
+    "modelCalls": 4,
+    "draft": {
+      "title": "Wooden Alphabet Puzzle",
+      "description": "A colourful wooden alphabet puzzle for children aged 3 to 6. Each chunky letter lifts out of its own slot, so little hands can practise picking up, matching and placing pieces while getting to know the shapes of the letters.",
+      "categorySlug": "educational-toys",
+      "attributes": [
+        { "name": "ageRange", "value": "3-6 years" },
+        { "name": "material", "value": "Wood" }
+      ],
+      "tags": ["alphabet", "wooden puzzle", "early learning", "ages 3-6"],
+      "similarProducts": [
+        { "slug": "wooden-number-puzzle", "reason": "Same material and format, numbers instead of letters" },
+        { "slug": "magnetic-letter-board", "reason": "Letter learning for an overlapping age range" }
+      ],
+      "missingInformation": [
+        { "field": "learningFocus", "note": "Required for educational toys; the brief does not say what skill it teaches" },
+        { "field": "safetyCertification", "note": "No safety marking (e.g. UKCA/CE) given; confirm before publishing" },
+        { "field": "pieceCount", "note": "Number of pieces not stated" },
+        { "field": "price", "note": "Not in the brief; similar puzzles sell for £12.99-£17.50" }
+      ]
+    }
+  }
+}
