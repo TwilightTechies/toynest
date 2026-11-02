@@ -41,13 +41,13 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 
 | # | Task statement | ToyNest implementation | Impl | Confidence | Score |
 |---|---|---|---|---|---|
-| 1.1 | Agentic loops (stop_reason `tool_use` vs `end_turn`; avoid NL/iteration-cap termination) | Manual loop product assistant | Pending | Not started | – |
-| 1.2 | Coordinator–subagent (hub-and-spoke), dynamic subagent selection, iterative refinement | Product research coordinator | Pending | Not started | – |
-| 1.3 | Subagent invocation & context passing (Task tool, explicit context, AgentDefinition, parallel spawns) | Agent SDK coordinator | Pending | Not started | – |
-| 1.4 | Multi-step workflows: programmatic enforcement vs prompt guidance, structured handoff | Verify-before-refund gate; human handoff summary | Pending | Not started | – |
-| 1.5 | Agent SDK hooks: PostToolUse normalisation, call interception (thresholds) | Refund > threshold → escalate hook | Pending | Not started | – |
-| 1.6 | Task decomposition: prompt chaining vs dynamic decomposition | Per-file + integration review passes | Pending | Not started | – |
-| 1.7 | Session state: `--resume`, `fork_session`, fresh start + summary vs stale resume | Named sessions demo | Pending | Not started | – |
+| 1.1 | Agentic loops (stop_reason `tool_use` vs `end_turn`; avoid NL/iteration-cap termination) | `runAgentLoop` + single-agent product draft assistant (version A) | Done | Medium | 3/4 (missed: thrown tool error → `is_error` result, not a failed run) |
+| 1.2 | Coordinator–subagent (hub-and-spoke), dynamic subagent selection, iterative refinement | Live coordinator demo (Claude Code subagents); Agent SDK version B coded | Done (SDK live run pending API key) | Medium | 3/4 (explaining the "why" was partial) |
+| 1.3 | Subagent invocation & context passing (Task tool, explicit context, AgentDefinition, parallel spawns) | `agents` definitions with scoped tools in Agent SDK coordinator | Done (SDK live run pending API key) | Low | 1.5/3 (parallel spawning missed twice) |
+| 1.4 | Multi-step workflows: programmatic enforcement vs prompt guidance, structured handoff | Verify-before-refund gate; structured `escalate_to_human` handoff (tests) | Done | Medium | 3/3 |
+| 1.5 | Agent SDK hooks: PostToolUse normalisation, call interception (thresholds) | `ToolHooks` in our own loop + `refundPolicyHooks` (Agent SDK hook API not used yet) | In progress | Medium | 1.5/2 (PostToolUse timing: before Claude sees the result) |
+| 1.6 | Task decomposition: prompt chaining vs dynamic decomposition | Taught only | Pending | Medium | 3/4 (open-ended "find out why" → adaptive) |
+| 1.7 | Session state: `--resume`, `fork_session`, fresh start + summary vs stale resume | Taught only | Pending | Low | 1/3 (fork ≠ refresh; heavy change → fresh + summary) |
 
 ## Domain 2 — Tool Design & MCP Integration (18%)
 
@@ -99,13 +99,15 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 |---|---|---|---|---|---|---|---|---|
 | 31 Oct | D3 calibration (3 Qs) | 2/3 (67%) | – | – | 2/3 | – | – | Rule loading (`@import` is eager; `paths:` rules auto-load); advisory vs deterministic reasoning. Habit: give the reason, not just the choice |
 | 1 Nov | Day 1 D3 practice set (10 Qs) | 7/10 (70%) | – | – | 7/10 | – | – | `@import` loads eagerly (2nd miss); multi-select completeness (Q4 picked 1 of 2: `allowed-tools`); self-review vs independent instance (4.6) |
+| 2 Nov | Day 2 lesson checks (mixed, ~14 items) | ~60% | ~65% | – | 2.5/4 | – | – | Skill scope (`~` = personal; a personal variant needs a different name); `is_error` recovery; fork vs fresh start; reasons often omitted |
+| 2 Nov | Day 2 D1 practice set (10 Qs) | 9/10 (90%) | 9/10 | – | – | – | – | Q4: parallel spawning = several delegations in one coordinator response; subagents never start each other |
 
 ## Daily log
 
 | Day | Date | Topics | Practical | Questions ✓/✗ | Notes |
 |---|---|---|---|---|---|
-| 1 | 1 Nov | D3: CLAUDE.md, rules, skills, hooks, permissions, plan mode | CLAUDE.md, settings.json, rule, 2 skills, hook (tested) | 7 ✓ / 3 ✗ | Exam guide verified; app scaffold + CI pending |
-| 2 | 2 Nov | | | | |
+| 1 | 1 Nov | D3: CLAUDE.md, rules, skills, hooks, permissions, plan mode | CLAUDE.md, settings.json, rule, 2 skills, hook (tested); workspaces + Next.js + core + CI (PR #1, green) | 7 ✓ / 3 ✗ | Exam guide verified; Supabase env + shadcn deferred to first data/UI feature |
+| 2 | 2 Nov | D1: agent loop, coordinator/subagents, hooks & enforcement, handoff, decomposition, sessions | `packages/ai` loop + tools + version A assistant; Agent SDK coordinator (version B) + Anthropic provider; `ToolHooks` + refund policy (16 tests); live coordinator demo via Claude Code subagents | 9 ✓ / 1 ✗ (practice set) | Live API runs (A vs B cost/latency) wait for a personal Console API key; branch `feat/agent-loop` not pushed yet |
 | 3 | 3 Nov | | | | |
 | 4 | 4 Nov | | | | |
 | 5 | 5 Nov | | | | |
