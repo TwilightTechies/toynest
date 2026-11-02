@@ -104,7 +104,7 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 
 | Day | Date | Topics | Practical | Questions ✓/✗ | Notes |
 |---|---|---|---|---|---|
-| 1 | 1 Nov | D3: CLAUDE.md, rules, skills, hooks, permissions, plan mode | CLAUDE.md, settings.json, rule, 2 skills, hook (tested) | 7 ✓ / 3 ✗ | Exam guide verified; app scaffold + CI pending |
+| 1 | 1 Nov | D3: CLAUDE.md, rules, skills, hooks, permissions, plan mode | CLAUDE.md, settings.json, rule, 2 skills, hook (tested); workspaces + Next.js + core + CI (PR #1, green) | 7 ✓ / 3 ✗ | Exam guide verified; Supabase env + shadcn deferred to first data/UI feature |
 | 2 | 2 Nov | | | | |
 | 3 | 3 Nov | | | | |
 | 4 | 4 Nov | | | | |
