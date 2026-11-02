@@ -26,7 +26,9 @@ export type AssistantBlock = TextBlock | ToolUseBlock;
 
 export type Message =
   | { role: "user"; content: string | Array<TextBlock | ToolResultBlock> }
-  | { role: "assistant"; content: AssistantBlock[] };
+  // providerContent holds the provider's original blocks (e.g. thinking blocks), which must be
+  // sent back unchanged on the next request. The loop never reads it; only the adapter does.
+  | { role: "assistant"; content: AssistantBlock[]; providerContent?: unknown };
 
 export interface ToolDefinition {
   name: string;
@@ -44,6 +46,7 @@ export interface ModelRequest {
 export interface ModelResponse {
   content: AssistantBlock[];
   stopReason: StopReason;
+  providerContent?: unknown;
 }
 
 export interface AIProvider {

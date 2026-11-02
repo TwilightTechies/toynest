@@ -3,6 +3,8 @@ import type { ToolDefinition } from "./types";
 
 export interface Tool {
   definition: ToolDefinition;
+  // Exposed so adapters (e.g. the Agent SDK's MCP server) can reuse the same validation.
+  inputSchema: z.ZodType;
   run(input: unknown): Promise<unknown>;
 }
 
@@ -17,6 +19,7 @@ export function defineTool<S extends z.ZodType>(config: {
   const { $schema: _ignored, ...inputSchema } = z.toJSONSchema(config.input, { io: "input" });
   return {
     definition: { name: config.name, description: config.description, input_schema: inputSchema },
+    inputSchema: config.input,
     run: async (raw) => config.execute(config.input.parse(raw)),
   };
 }

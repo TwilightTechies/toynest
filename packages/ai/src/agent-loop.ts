@@ -22,14 +22,14 @@ export interface RunAgentOptions {
 }
 
 export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult> {
-  const { provider, system, tools, maxTokens = 1024, maxIterations = 10 } = options;
+  const { provider, system, tools, maxTokens = 16000, maxIterations = 10 } = options;
   const toolsByName = new Map(tools.map((tool) => [tool.definition.name, tool]));
   const definitions = tools.map((tool) => tool.definition);
   const messages: Message[] = [{ role: "user", content: options.prompt }];
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
     const response = await provider.createMessage({ system, messages, tools: definitions, maxTokens });
-    messages.push({ role: "assistant", content: response.content });
+    messages.push({ role: "assistant", content: response.content, providerContent: response.providerContent });
 
     switch (response.stopReason) {
       case "end_turn":

@@ -36,7 +36,7 @@ export function createSingleAgentDraftAssistant(deps: SingleAgentDeps): ProductD
           searchProductsTool(deps),
           submitDraftTool({ ...deps, onAccepted: (draft) => (accepted = draft) }),
         ],
-        maxTokens: 2048,
+        maxTokens: 16000,
         maxIterations: deps.maxIterations ?? 8,
       });
 
