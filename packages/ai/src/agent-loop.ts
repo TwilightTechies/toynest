@@ -11,21 +11,40 @@ export type LoopResult =
       iterations: number;
     };
 
+// A tool call that has already finished, as seen by hooks.
+export interface CompletedToolCall {
+  name: string;
+  input: unknown;
+  output: unknown;
+  isError: boolean;
+}
+
+// Deterministic enforcement around tool calls; Claude cannot skip these.
+export interface ToolHooks {
+  // PreToolUse: return { block: reason } to stop the call. The reason reaches Claude as an is_error result.
+  // `completed` holds calls from earlier turns only, so a call cannot satisfy a prerequisite in the same turn.
+  beforeToolCall?(call: ToolUseBlock, completed: readonly CompletedToolCall[]): { block: string } | undefined;
+  // PostToolUse: transform a successful result before Claude sees it (e.g. normalise formats).
+  afterToolCall?(call: ToolUseBlock, output: unknown): unknown;
+}
+
 export interface RunAgentOptions {
   provider: AIProvider;
   system: string;
   prompt: string;
   tools: Tool[];
+  hooks?: ToolHooks;
   maxTokens?: number;
   // Safety net only. Normal termination is driven by stop_reason, never by counting turns.
   maxIterations?: number;
 }
 
 export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult> {
-  const { provider, system, tools, maxTokens = 16000, maxIterations = 10 } = options;
+  const { provider, system, tools, hooks = {}, maxTokens = 16000, maxIterations = 10 } = options;
   const toolsByName = new Map(tools.map((tool) => [tool.definition.name, tool]));
   const definitions = tools.map((tool) => tool.definition);
   const messages: Message[] = [{ role: "user", content: options.prompt }];
+  const completed: CompletedToolCall[] = [];
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
     const response = await provider.createMessage({ system, messages, tools: definitions, maxTokens });
@@ -38,9 +57,12 @@ export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult
       case "tool_use": {
         // Text in the same reply ("Let me check...") is not a completion signal; keep looping.
         const calls = response.content.filter((block): block is ToolUseBlock => block.type === "tool_use");
+        // Hooks see only earlier turns: snapshot before running this turn's calls.
+        const earlier = [...completed];
+        const outcomes = await Promise.all(calls.map((call) => executeTool(toolsByName, hooks, earlier, call)));
+        completed.push(...outcomes.map((outcome) => outcome.record));
         // Every result for one assistant turn goes back in a single user message.
-        const results = await Promise.all(calls.map((call) => executeTool(toolsByName, call)));
-        messages.push({ role: "user", content: results });
+        messages.push({ role: "user", content: outcomes.map((outcome) => outcome.result) });
         break;
       }
 
@@ -56,23 +78,40 @@ export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult
   return { status: "incomplete", reason: "iteration_limit", messages, iterations: maxIterations };
 }
 
-// Tool failures are reported to Claude as is_error results so it can recover, instead of crashing the loop.
-async function executeTool(toolsByName: Map<string, Tool>, call: ToolUseBlock): Promise<ToolResultBlock> {
+// Tool failures and blocked calls are reported to Claude as is_error results so it can recover,
+// instead of crashing the loop.
+async function executeTool(
+  toolsByName: Map<string, Tool>,
+  hooks: ToolHooks,
+  earlier: readonly CompletedToolCall[],
+  call: ToolUseBlock,
+): Promise<{ result: ToolResultBlock; record: CompletedToolCall }> {
+  const fail = (content: string) => ({
+    result: { type: "tool_result" as const, tool_use_id: call.id, content, is_error: true },
+    record: { name: call.name, input: call.input, output: content, isError: true },
+  });
+
   const tool = toolsByName.get(call.name);
-  if (!tool) {
-    return { type: "tool_result", tool_use_id: call.id, content: `Unknown tool: ${call.name}`, is_error: true };
-  }
+  if (!tool) return fail(`Unknown tool: ${call.name}`);
+
+  const decision = hooks.beforeToolCall?.(call, earlier);
+  if (decision) return fail(`Blocked by policy: ${decision.block}`);
+
   try {
-    const output = await tool.run(call.input);
-    return { type: "tool_result", tool_use_id: call.id, content: JSON.stringify(output) };
+    const raw = await tool.run(call.input);
+    const output = hooks.afterToolCall ? hooks.afterToolCall(call, raw) : raw;
+    return {
+      result: { type: "tool_result", tool_use_id: call.id, content: JSON.stringify(output) },
+      record: { name: call.name, input: call.input, output, isError: false },
+    };
   } catch (error) {
-    const content =
+    return fail(
       error instanceof z.ZodError
         ? `Invalid input: ${z.prettifyError(error)}`
         : error instanceof Error
           ? error.message
-          : "Tool failed";
-    return { type: "tool_result", tool_use_id: call.id, content, is_error: true };
+          : "Tool failed",
+    );
   }
 }
 
