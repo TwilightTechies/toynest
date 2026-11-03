@@ -53,11 +53,11 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 
 | # | Task statement | ToyNest implementation | Impl | Confidence | Score |
 |---|---|---|---|---|---|
-| 2.1 | Tool descriptions & boundaries; splitting/renaming overlapping tools | MCP tool descriptions | Pending | Not started | – |
-| 2.2 | Structured MCP errors: `isError`, errorCategory, isRetryable; empty ≠ failure | Error contract in MCP server | Pending | Not started | – |
-| 2.3 | Tool distribution (4–5 per agent), scoped cross-role tools, `tool_choice` auto/any/forced | Per-agent tool sets | Pending | Not started | – |
-| 2.4 | MCP integration: `.mcp.json` vs `~/.claude.json`, env var expansion, resources as catalogs | ToyNest MCP in `.mcp.json` | Pending | Not started | – |
-| 2.5 | Built-in tools: Grep vs Glob vs Read/Write/Edit; incremental exploration | Used in Claude Code workflows | Pending | Not started | – |
+| 2.1 | Tool descriptions & boundaries; splitting/renaming overlapping tools | MCP tool descriptions (purpose, boundary, input format, empty result) | Done | Medium | 4/5 (missed: describe what an empty result means) |
+| 2.2 | Structured MCP errors: `isError`, errorCategory, isRetryable; empty ≠ failure | `toolError` / `guarded` error contract, tested | Done | Medium | 4.5/5 (half: hiding a timeout as `[]` is a tool fix, not a prompt fix) |
+| 2.3 | Tool distribution (4–5 per agent), scoped cross-role tools, `tool_choice` auto/any/forced | Per-agent tool sets (Day 2); `tool_choice` not used (400 on current models, see exam note) | In progress | High | 5/5 with reasons |
+| 2.4 | MCP integration: `.mcp.json` vs `~/.claude.json`, env var expansion, resources as catalogs | `.mcp.json` with `${VAR:-default}`; `toynest://categories` resource; `/admin/mcp` | Done (Claude Code live check pending restart) | Medium | 5/6 (resource-as-catalogue missed once) |
+| 2.5 | Built-in tools: Grep vs Glob vs Read/Write/Edit; incremental exploration | Used in Claude Code workflows | Done | Medium | 4/5 (Glob `**/*` ≠ incremental exploration) |
 
 ## Domain 3 — Claude Code Configuration & Workflows (20%)
 
@@ -101,6 +101,8 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 1 Nov | Day 1 D3 practice set (10 Qs) | 7/10 (70%) | – | – | 7/10 | – | – | `@import` loads eagerly (2nd miss); multi-select completeness (Q4 picked 1 of 2: `allowed-tools`); self-review vs independent instance (4.6) |
 | 2 Nov | Day 2 lesson checks (mixed, ~14 items) | ~60% | ~65% | – | 2.5/4 | – | – | Skill scope (`~` = personal; a personal variant needs a different name); `is_error` recovery; fork vs fresh start; reasons often omitted |
 | 2 Nov | Day 2 D1 practice set (10 Qs) | 9/10 (90%) | 9/10 | – | – | – | – | Q4: parallel spawning = several delegations in one coordinator response; subagents never start each other |
+| 3 Nov | Day 3 lesson checks (16 items) | 13.5/16 (84%) | – | 13.5/16 | – | – | – | Empty-result wording in descriptions; resource vs tool; Glob vs Grep for exploration |
+| 3 Nov | Day 3 D2 practice set (10 Qs) | 10/10 (100%) | – | 10/10 | – | – | – | None in the set; reasons not given, so confirm the "why" in mocks |
 
 ## Daily log
 
@@ -108,7 +110,7 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 |---|---|---|---|---|---|
 | 1 | 1 Nov | D3: CLAUDE.md, rules, skills, hooks, permissions, plan mode | CLAUDE.md, settings.json, rule, 2 skills, hook (tested); workspaces + Next.js + core + CI (PR #1, green) | 7 ✓ / 3 ✗ | Exam guide verified; Supabase env + shadcn deferred to first data/UI feature |
 | 2 | 2 Nov | D1: agent loop, coordinator/subagents, hooks & enforcement, handoff, decomposition, sessions | `packages/ai` loop + tools + version A assistant; Agent SDK coordinator (version B) + Anthropic provider; `ToolHooks` + refund policy (16 tests); live coordinator demo via Claude Code subagents | 9 ✓ / 1 ✗ (practice set) | Live API runs (A vs B cost/latency) wait for a personal Console API key; branch `feat/agent-loop` not pushed yet |
-| 3 | 3 Nov | | | | |
+| 3 | 3 Nov | D2: tool descriptions, structured errors, tool distribution & `tool_choice`, MCP config & resources, built-in tools | `apps/mcp-server` (3 tools, 1 resource, error contract, 5 tests), `.mcp.json`, `/admin/mcp` explorer, MCP_DOCUMENTATION.md, ADR-008 | 10 ✓ / 0 ✗ (practice set) | Claude Code live MCP check needs a restart + server approval |
 | 4 | 4 Nov | | | | |
 | 5 | 5 Nov | | | | |
 | 6 | 6 Nov | | | | |
