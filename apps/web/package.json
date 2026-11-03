@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@toynest/adapters": "0.0.0",
     "@toynest/ai": "0.0.0",
     "@toynest/core": "0.0.0",

@@ -50,3 +50,10 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
 - **Decision:** `core` defines interfaces (`ProductRepository`, `OrderRepository`, `AIProvider`, `PaymentProvider`, …); `adapters` implement them.
 - **Alternatives:** Call SDKs directly from route handlers (faster initially, hard to test/swap).
 - **Consequences:** Slight indirection; enables mocking in tests and swapping providers.
+
+## ADR-008 · Read-only ToyNest MCP server over stdio
+- **Date:** 3 Nov 2026 · **Status:** Accepted
+- **Context:** Exam Domain 2 (task statements 2.1–2.4) and Scenario 4 cover MCP tool design, structured errors, resources and `.mcp.json`. The catalogue should be usable by any Claude client, not only our own agent loop.
+- **Decision:** `apps/mcp-server` serves `get_categories`, `search_products`, `get_product` and the `toynest://categories` resource over stdio, reading through the core repository ports. Failures return `isError` with `errorCategory` and `isRetryable`; empty results are successes. It is configured in the project-scope `.mcp.json` with `${VAR}` expansion and no secrets. The admin MCP explorer spawns it and calls it over stdio rather than importing its code.
+- **Alternatives:** Streamable HTTP transport (needed for remote clients, adds auth and hosting work); importing the server into the web app (couples two apps).
+- **Consequences:** Read-only means no write tools until admin auth and approval exist. Spawning per request is slow (about 1 s) but acceptable for a local admin tool.

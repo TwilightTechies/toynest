@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "toynest": {
+      "command": "npm",
+      "args": ["run", "--silent", "start", "-w", "@toynest/mcp-server"],
+      "env": {
+        "TOYNEST_CATALOG_PATH": "${TOYNEST_CATALOG_PATH:-data/sample-catalog.json}"
+      }
+    }
+  }
+}

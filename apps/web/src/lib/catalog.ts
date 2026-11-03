@@ -2,8 +2,9 @@ import "server-only";
 import path from "node:path";
 import { loadSampleCatalog } from "@toynest/adapters/sample-catalog";
 
-// The repo-level data/ folder; `next dev` runs with apps/web as the working directory.
-export const dataDir = path.join(process.cwd(), "../../data");
+// `next dev` runs with apps/web as the working directory.
+export const repoRoot = path.join(process.cwd(), "../..");
+export const dataDir = path.join(repoRoot, "data");
 
 export interface CatalogItem {
   slug: string;

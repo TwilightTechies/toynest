@@ -7,6 +7,11 @@ const sections = [
     title: "Admin · AI drafts",
     body: "A product draft waiting for review, with the facts the assistant refused to invent.",
   },
+  {
+    href: "/admin/mcp",
+    title: "Admin · MCP explorer",
+    body: "Call the ToyNest MCP server's tools and see results and structured errors.",
+  },
 ];
 
 export default function Home() {
