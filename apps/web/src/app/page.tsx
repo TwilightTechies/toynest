@@ -8,6 +8,11 @@ const sections = [
     body: "A product draft waiting for review, with the facts the assistant refused to invent.",
   },
   {
+    href: "/admin/drafts/new",
+    title: "Admin · New AI draft",
+    body: "Draft a listing with Claude, then check it with an independent reviewer. Needs an API key.",
+  },
+  {
     href: "/admin/mcp",
     title: "Admin · MCP explorer",
     body: "Call the ToyNest MCP server's tools and see results and structured errors.",

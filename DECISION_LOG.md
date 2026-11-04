@@ -57,3 +57,15 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
 - **Decision:** `apps/mcp-server` serves `get_categories`, `search_products`, `get_product` and the `toynest://categories` resource over stdio, reading through the core repository ports. Failures return `isError` with `errorCategory` and `isRetryable`; empty results are successes. It is configured in the project-scope `.mcp.json` with `${VAR}` expansion and no secrets. The admin MCP explorer spawns it and calls it over stdio rather than importing its code.
 - **Alternatives:** Streamable HTTP transport (needed for remote clients, adds auth and hosting work); importing the server into the web app (couples two apps).
 - **Consequences:** Read-only means no write tools until admin auth and approval exist. Spawning per request is slow (about 1 s) but acceptable for a local admin tool.
+
+## ADR-009 · Independent draft reviewer with explicit criteria
+- **Date:** 4 Nov 2026 · **Status:** Accepted
+- **Context:** Exam Domain 4 (task statements 4.1–4.4 and 4.6). Self-review in the writer's own conversation tends to agree with itself, and vague review prompts produce noisy findings that admins learn to ignore.
+- **Decision:**
+  - `createDraftReviewer` runs in a fresh conversation that sees only the brief and the draft.
+  - It flags three explicit categories (invented fact, age mismatch, price in text), with severity defined by example and few-shot cases that include something not to flag.
+  - It returns structured output through a `submit_review` tool, and code checks that every quoted phrase is really in the draft, sending specific errors back for a retry.
+  - It doesn't use forced `tool_choice` (rejected with a 400 on current models when thinking is on); the stop-reason loop and the tool's validation give the same guarantee.
+  - `/admin/drafts/new` loads the key from the root `.env.local` on the server only.
+- **Alternatives:** Self-review in the writer's own conversation (cheaper, but it agrees with itself); a single combined writer and reviewer prompt; forced `tool_choice` (what the exam teaches, but unsupported here).
+- **Consequences:** Each run costs two conversations. Findings below 0.7 confidence are marked for a second look. A "tone" category is deliberately left out so precision stays high.

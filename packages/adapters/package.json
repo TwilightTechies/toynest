@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./sample-catalog": "./src/in-memory/sample-catalog.ts"
+    "./sample-catalog": "./src/in-memory/sample-catalog.ts",
+    "./anthropic": "./src/anthropic/anthropic-provider.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
