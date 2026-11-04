@@ -75,12 +75,12 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 
 | # | Task statement | ToyNest implementation | Impl | Confidence | Score |
 |---|---|---|---|---|---|
-| 4.1 | Explicit criteria over vague instructions; false-positive control | Review prompt criteria | Pending | Not started | – |
-| 4.2 | Few-shot for consistency, ambiguous cases, extraction | Description assistant examples | Pending | Not started | – |
-| 4.3 | Structured output via tool_use + JSON schema; nullable fields; enum "other"/"unclear" | Forced-tool product content | Pending | Not started | – |
-| 4.4 | Validation-retry with error feedback; when retries can't help | Zod retry loop | Pending | Not started | – |
-| 4.5 | Message Batches API: 50% cost, ≤24 h, no SLA, custom_id, no multi-turn tools | Bulk description design | Pending | Not started | – |
-| 4.6 | Multi-instance / multi-pass review; self-review limits | Independent reviewer pass | Pending | Not started | – |
+| 4.1 | Explicit criteria over vague instructions; false-positive control | Reviewer prompt: 3 explicit categories + do-not-flag list, severity by example | Done | High | 5/5 with reasons |
+| 4.2 | Few-shot for consistency, ambiguous cases, extraction | Reviewer few-shot incl. a do-not-flag case | Done | Medium | 3/4 (picked obvious examples over the ambiguous one with reasoning) |
+| 4.3 | Structured output via tool_use + JSON schema; nullable fields; enum "other"/"unclear" | `submit_review` / `submit_product_draft` schemas; forced `tool_choice` not used (400 on current models) | Done | High | 4.5/5 (`"other"` needs a detail field) |
+| 4.4 | Validation-retry with error feedback; when retries can't help | Quote-must-exist check with specific error → retry (tested) | Done | Medium | 4/5 (self-check fields statedTotal vs calculatedTotal missed) |
+| 4.5 | Message Batches API: 50% cost, ≤24 h, no SLA, custom_id, no multi-turn tools | Design note only (overnight bulk descriptions) | Pending | High | 4/4 |
+| 4.6 | Multi-instance / multi-pass review; self-review limits | `createDraftReviewer` in a fresh conversation | Done | Medium | 2/2 (few items) |
 
 ## Domain 5 — Context Management & Reliability (15%)
 
@@ -103,6 +103,8 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 2 Nov | Day 2 D1 practice set (10 Qs) | 9/10 (90%) | 9/10 | – | – | – | – | Q4: parallel spawning = several delegations in one coordinator response; subagents never start each other |
 | 3 Nov | Day 3 lesson checks (16 items) | 13.5/16 (84%) | – | 13.5/16 | – | – | – | Empty-result wording in descriptions; resource vs tool; Glob vs Grep for exploration |
 | 3 Nov | Day 3 D2 practice set (10 Qs) | 10/10 (100%) | – | 10/10 | – | – | – | None in the set; reasons not given, so confirm the "why" in mocks |
+| 4 Nov | Day 4 lesson checks (15 items) | 12.5/15 (83%) | – | – | – | 12.5/15 | – | Ambiguous few-shot example with reasoning; statedTotal vs calculatedTotal; `"other"` + detail field |
+| 4 Nov | Day 4 D4 practice set (10 Qs) | 10/10 (100%) | – | – | – | 10/10 | – | Reasons restated the option rather than the why |
 
 ## Daily log
 
@@ -111,7 +113,7 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 1 | 1 Nov | D3: CLAUDE.md, rules, skills, hooks, permissions, plan mode | CLAUDE.md, settings.json, rule, 2 skills, hook (tested); workspaces + Next.js + core + CI (PR #1, green) | 7 ✓ / 3 ✗ | Exam guide verified; Supabase env + shadcn deferred to first data/UI feature |
 | 2 | 2 Nov | D1: agent loop, coordinator/subagents, hooks & enforcement, handoff, decomposition, sessions | `packages/ai` loop + tools + version A assistant; Agent SDK coordinator (version B) + Anthropic provider; `ToolHooks` + refund policy (16 tests); live coordinator demo via Claude Code subagents | 9 ✓ / 1 ✗ (practice set) | Live API runs (A vs B cost/latency) wait for a personal Console API key; branch `feat/agent-loop` not pushed yet |
 | 3 | 3 Nov | D2: tool descriptions, structured errors, tool distribution & `tool_choice`, MCP config & resources, built-in tools | `apps/mcp-server` (3 tools, 1 resource, error contract, 5 tests), `.mcp.json`, `/admin/mcp` explorer, MCP_DOCUMENTATION.md, ADR-008 | 10 ✓ / 0 ✗ (practice set) | Claude Code live MCP check needs a restart + server approval |
-| 4 | 4 Nov | | | | |
+| 4 | 4 Nov | D4: explicit criteria, few-shot, structured output, validation-retry, Batch API, independent review | `createDraftReviewer` (4 tests), `/admin/drafts/new` (writer + reviewer via server action), ADR-009 | 10 ✓ / 0 ✗ (practice set) | Live runs still wait for an API key; missing-key path verified |
 | 5 | 5 Nov | | | | |
 | 6 | 6 Nov | | | | |
 | 7 | 7 Nov | | | | |
