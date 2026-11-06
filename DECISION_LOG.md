@@ -31,7 +31,7 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
 - **Consequences:** `process_refund` is mock-only, operates on synthetic data, and never moves money; refund decisions above threshold require human approval.
 
 ## ADR-006 · Claude Agent SDK for orchestration
-- **Date:** 1 Nov 2026 · **Status:** Accepted
+- **Date:** 1 Nov 2026 · **Status:** Accepted; partly superseded by ADR-010 (the support agent uses ToyNest's own loop)
 - **Context:** Exam Domain 1 (27%) tests Agent SDK concepts: AgentDefinition, Task-based subagents, allowedTools, hooks, sessions.
 - **Decision:** Hand-write one raw Messages API loop first (task 1.1), then build the coordinator and support agent with the Claude Agent SDK (TypeScript).
 - **Alternatives:** Raw API only (more code, misses SDK concepts); SDK only (hides the loop mechanics).
@@ -69,3 +69,15 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - `/admin/drafts/new` loads the key from the root `.env.local` on the server only.
 - **Alternatives:** Self-review in the writer's own conversation (cheaper, but it agrees with itself); a single combined writer and reviewer prompt; forced `tool_choice` (what the exam teaches, but unsupported here).
 - **Consequences:** Each run costs two conversations. Findings below 0.7 confidence are marked for a second look. A "tone" category is deliberately left out so precision stays high.
+
+## ADR-010 · Support assistant on ToyNest's own loop, with case facts and isolation layers
+- **Date:** 6 Nov 2026 · **Status:** Accepted
+- **Context:** Exam Domain 5 (task statements 5.1–5.3) and Scenario 1. A multi-turn support chat must keep exact amounts and dates over a long conversation, escalate on explicit criteria, report failures in a form the agent can act on, and never expose one customer's data to another. The existing `refundPolicyHooks` were written for `runAgentLoop`.
+- **Decision:**
+  - The support assistant runs on `runAgentLoop`, not the Agent SDK. The loop gains `history`, `priorCalls` and `toolCalls`; `combineHooks` merges hook sets.
+  - Conversation state stays on the server. Each turn sends a `<case_facts>` block, built by code from validated tool results, plus only the last 6 chat turns verbatim. Tool results are trimmed to a support view.
+  - Isolation: (1) the customer id comes from the session and repository methods are always scoped to a customer; (2) a PreToolUse hook blocks foreign customer ids and refunds on orders not looked up first; (3) a PostToolUse hook withholds any result that contains another customer's id. Layer 4 will be Supabase RLS.
+  - Tools throw `ToolError` with `errorCategory` and `isRetryable`. "Could not check" (transient) is kept separate from "not on your account" (business).
+  - Escalation criteria and borderline examples live in the system prompt. The £50 limit, verification and ownership rules are enforced by hooks and tool code.
+- **Alternatives:** Agent SDK with SDK hooks and sessions (follows ADR-006 and practises sessions, but the SDK keeps the full history, which hides the case-facts design, and the hooks would need porting); sending the full transcript every turn (simpler, but it grows without limit and buries facts in the middle).
+- **Consequences:** The web demo uses a mock "sign in as" cookie and an in-process conversation store, so conversations are lost on restart. Supabase Auth and tables replace both later (Build B). Orders older than 6 turns are known only through case facts, so case facts must record every fact the agent may need again.

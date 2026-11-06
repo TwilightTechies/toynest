@@ -3,6 +3,11 @@ import Link from "next/link";
 const sections = [
   { href: "/products", title: "Products", body: "The sample catalogue, read through the core repository ports." },
   {
+    href: "/support",
+    title: "Customer support",
+    body: "Chat with the Claude support assistant as a demo customer: refunds, escalation, case facts. Needs an API key.",
+  },
+  {
     href: "/admin/drafts",
     title: "Admin · AI drafts",
     body: "A product draft waiting for review, with the facts the assistant refused to invent.",
