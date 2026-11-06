@@ -1,14 +1,16 @@
 import { z } from "zod";
-import type { Tool } from "./tool";
+import { ToolError, type Tool } from "./tool";
 import type { AIProvider, AssistantBlock, Message, ToolResultBlock, ToolUseBlock } from "./types";
 
+// toolCalls: the calls completed during this run (not priorCalls), so callers can update their own state.
 export type LoopResult =
-  | { status: "completed"; text: string; messages: Message[]; iterations: number }
+  | { status: "completed"; text: string; messages: Message[]; iterations: number; toolCalls: CompletedToolCall[] }
   | {
       status: "incomplete";
       reason: "max_tokens" | "refusal" | "iteration_limit" | "unexpected_stop";
       messages: Message[];
       iterations: number;
+      toolCalls: CompletedToolCall[];
     };
 
 // A tool call that has already finished, as seen by hooks.
@@ -25,13 +27,34 @@ export interface ToolHooks {
   // `completed` holds calls from earlier turns only, so a call cannot satisfy a prerequisite in the same turn.
   beforeToolCall?(call: ToolUseBlock, completed: readonly CompletedToolCall[]): { block: string } | undefined;
   // PostToolUse: transform a successful result before Claude sees it (e.g. normalise formats).
+  // Throwing turns the call into an is_error result, so the original output never reaches Claude.
   afterToolCall?(call: ToolUseBlock, output: unknown): unknown;
+}
+
+// Runs several hook sets as one: the first block wins; afterToolCall transforms run in order.
+export function combineHooks(...sets: ToolHooks[]): ToolHooks {
+  return {
+    beforeToolCall(call, completed) {
+      for (const set of sets) {
+        const decision = set.beforeToolCall?.(call, completed);
+        if (decision) return decision;
+      }
+      return undefined;
+    },
+    afterToolCall(call, output) {
+      return sets.reduce((current, set) => (set.afterToolCall ? set.afterToolCall(call, current) : current), output);
+    },
+  };
 }
 
 export interface RunAgentOptions {
   provider: AIProvider;
   system: string;
   prompt: string;
+  // Earlier turns to send before `prompt` (e.g. the last few chat turns). Must start with a user message.
+  history?: Message[];
+  // Tool calls from earlier runs that hooks should treat as already completed (e.g. an earlier verification).
+  priorCalls?: readonly CompletedToolCall[];
   tools: Tool[];
   hooks?: ToolHooks;
   maxTokens?: number;
@@ -43,8 +66,10 @@ export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult
   const { provider, system, tools, hooks = {}, maxTokens = 16000, maxIterations = 10 } = options;
   const toolsByName = new Map(tools.map((tool) => [tool.definition.name, tool]));
   const definitions = tools.map((tool) => tool.definition);
-  const messages: Message[] = [{ role: "user", content: options.prompt }];
+  const messages: Message[] = [...(options.history ?? []), { role: "user", content: options.prompt }];
+  const prior = options.priorCalls ?? [];
   const completed: CompletedToolCall[] = [];
+  const done = (iterations: number) => ({ messages, iterations, toolCalls: completed });
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
     const response = await provider.createMessage({ system, messages, tools: definitions, maxTokens });
@@ -52,13 +77,13 @@ export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult
 
     switch (response.stopReason) {
       case "end_turn":
-        return { status: "completed", text: textOf(response.content), messages, iterations: iteration };
+        return { status: "completed", text: textOf(response.content), ...done(iteration) };
 
       case "tool_use": {
         // Text in the same reply ("Let me check...") is not a completion signal; keep looping.
         const calls = response.content.filter((block): block is ToolUseBlock => block.type === "tool_use");
         // Hooks see only earlier turns: snapshot before running this turn's calls.
-        const earlier = [...completed];
+        const earlier = [...prior, ...completed];
         const outcomes = await Promise.all(calls.map((call) => executeTool(toolsByName, hooks, earlier, call)));
         completed.push(...outcomes.map((outcome) => outcome.record));
         // Every result for one assistant turn goes back in a single user message.
@@ -68,14 +93,14 @@ export async function runAgentLoop(options: RunAgentOptions): Promise<LoopResult
 
       case "max_tokens":
       case "refusal":
-        return { status: "incomplete", reason: response.stopReason, messages, iterations: iteration };
+        return { status: "incomplete", reason: response.stopReason, ...done(iteration) };
 
       default:
-        return { status: "incomplete", reason: "unexpected_stop", messages, iterations: iteration };
+        return { status: "incomplete", reason: "unexpected_stop", ...done(iteration) };
     }
   }
 
-  return { status: "incomplete", reason: "iteration_limit", messages, iterations: maxIterations };
+  return { status: "incomplete", reason: "iteration_limit", ...done(maxIterations) };
 }
 
 // Tool failures and blocked calls are reported to Claude as is_error results so it can recover,
@@ -105,6 +130,9 @@ async function executeTool(
       record: { name: call.name, input: call.input, output, isError: false },
     };
   } catch (error) {
+    if (error instanceof ToolError) {
+      return fail(JSON.stringify({ error: error.message, errorCategory: error.category, isRetryable: error.retryable }));
+    }
     return fail(
       error instanceof z.ZodError
         ? `Invalid input: ${z.prettifyError(error)}`

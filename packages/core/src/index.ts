@@ -1,4 +1,9 @@
 export * from "./domain/category";
+export * from "./domain/customer";
+export * from "./domain/order";
 export * from "./domain/product";
+export * from "./errors";
 export type * from "./ports/category-repository";
+export type * from "./ports/customer-repository";
+export type * from "./ports/order-repository";
 export type * from "./ports/product-repository";

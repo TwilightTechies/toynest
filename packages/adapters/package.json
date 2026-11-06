@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./sample-catalog": "./src/in-memory/sample-catalog.ts",
+    "./sample-support": "./src/in-memory/sample-support.ts",
     "./anthropic": "./src/anthropic/anthropic-provider.ts"
   },
   "scripts": {

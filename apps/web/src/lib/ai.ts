@@ -6,7 +6,7 @@ import { createDraftReviewer, createSingleAgentDraftAssistant } from "@toynest/a
 import { dataDir, repoRoot } from "./catalog";
 
 // One key file for the whole repo: the root .env.local (gitignored). Server-only; never NEXT_PUBLIC_.
-function loadRootEnv() {
+export function loadRootEnv() {
   if (process.env.ANTHROPIC_API_KEY) return;
   try {
     process.loadEnvFile(path.join(repoRoot, ".env.local"));
