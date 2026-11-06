@@ -86,12 +86,12 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 
 | # | Task statement | ToyNest implementation | Impl | Confidence | Score |
 |---|---|---|---|---|---|
-| 5.1 | Preserve critical info: case-facts block, trim tool output, lost-in-the-middle | Support assistant context builder | Pending | Not started | – |
-| 5.2 | Escalation & ambiguity: explicit criteria, honour human requests, policy gaps, multiple matches | Support escalation rules | Pending | Not started | – |
-| 5.3 | Error propagation across agents: structured context, partial results, coverage gaps | Coordinator error handling | Pending | Not started | – |
-| 5.4 | Large codebase exploration: degradation, scratchpads, subagents, manifests, `/compact` | Explore workflows | Pending | Not started | – |
-| 5.5 | Human review & confidence calibration: stratified sampling, per-segment accuracy | Admin review queue | Pending | Not started | – |
-| 5.6 | Provenance: claim-source mappings, conflicts annotated, dates | Research coordinator citations | Pending | Not started | – |
+| 5.1 | Preserve critical info: case-facts block, trim tool output, lost-in-the-middle | `case-facts.ts` (built by code, every turn), last-6-turns history, `lookup_order` support view (tested) | Done | Medium | 4/6. Missed "trim at the door" twice: chose a subagent returning the full JSON. Retest in mocks |
+| 5.2 | Escalation & ambiguity: explicit criteria, honour human requests, policy gaps, multiple matches | Support system prompt: criteria + borderline examples; `escalate_to_human` structured handoff; £50 limit stays in hooks | Done | High | 5/5 |
+| 5.3 | Error propagation across agents: structured context, partial results, coverage gaps | `ToolError` (`errorCategory`, `isRetryable`); transient vs not-found (tested). Coordinator-level partial results not built | Partial | High | 5/5 |
+| 5.4 | Large codebase exploration: degradation, scratchpads, subagents, manifests, `/compact` | Practised: memory handoff file as a manifest; tracker as a persistent record of findings | Practised | Medium | 3/4 (Q7 letter slip: the reason described B, answered C) |
+| 5.5 | Human review & confidence calibration: stratified sampling, per-segment accuracy | Design only (per-category accuracy before auto-approving drafts; weekly stratified sample) | Pending | Medium | 4/4, but reasons restated the options |
+| 5.6 | Provenance: claim-source mappings, conflicts annotated, dates | Design only (claim, source, excerpt, date in researcher output) | Pending | Medium | 4/4, but reasons were partial |
 
 ## Assessment log
 
@@ -105,6 +105,8 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 3 Nov | Day 3 D2 practice set (10 Qs) | 10/10 (100%) | – | 10/10 | – | – | – | None in the set; reasons not given, so confirm the "why" in mocks |
 | 4 Nov | Day 4 lesson checks (15 items) | 12.5/15 (83%) | – | – | – | 12.5/15 | – | Ambiguous few-shot example with reasoning; statedTotal vs calculatedTotal; `"other"` + detail field |
 | 4 Nov | Day 4 D4 practice set (10 Qs) | 10/10 (100%) | – | – | – | 10/10 | – | Reasons restated the option rather than the why |
+| 5–6 Nov | Day 5 lesson checks (18 items) | 17/18 (94%) | – | – | – | – | 17/18 | 5.1 trim tool output at the boundary (chose a subagent returning the full JSON) |
+| 6 Nov | Day 5 D5 practice set (10 Qs) | 8/10 (80%) | – | – | – | – | 8/10 | Q10 the same "trim at the door" trap (2nd miss); Q7 letter slip; Q2 right letter but wrong reason (lost in the middle) |
 
 ## Daily log
 
@@ -114,6 +116,6 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 2 | 2 Nov | D1: agent loop, coordinator/subagents, hooks & enforcement, handoff, decomposition, sessions | `packages/ai` loop + tools + version A assistant; Agent SDK coordinator (version B) + Anthropic provider; `ToolHooks` + refund policy (16 tests); live coordinator demo via Claude Code subagents | 9 ✓ / 1 ✗ (practice set) | Live API runs (A vs B cost/latency) wait for a personal Console API key; branch `feat/agent-loop` not pushed yet |
 | 3 | 3 Nov | D2: tool descriptions, structured errors, tool distribution & `tool_choice`, MCP config & resources, built-in tools | `apps/mcp-server` (3 tools, 1 resource, error contract, 5 tests), `.mcp.json`, `/admin/mcp` explorer, MCP_DOCUMENTATION.md, ADR-008 | 10 ✓ / 0 ✗ (practice set) | Claude Code live MCP check needs a restart + server approval |
 | 4 | 4 Nov | D4: explicit criteria, few-shot, structured output, validation-retry, Batch API, independent review | `createDraftReviewer` (4 tests), `/admin/drafts/new` (writer + reviewer via server action), ADR-009 | 10 ✓ / 0 ✗ (practice set) | Live runs still wait for an API key; missing-key path verified |
-| 5 | 5 Nov | | | | |
+| 5 | 5–6 Nov | D5: case facts and trimming, escalation, error propagation, codebase exploration, human review and calibration, provenance | Support assistant on own loop: case facts, isolation layers 1–3, `ToolError`, `/support` chat with mock sign-in (10 new tests), ADR-010, PR #6 | 8 ✓ / 2 ✗ (practice set) | Supabase (Build B) moved to after the mocks by user decision; live chat waits for an API key; browser extension not connected, so only an HTTP smoke test |
 | 6 | 6 Nov | | | | |
 | 7 | 7 Nov | | | | |
