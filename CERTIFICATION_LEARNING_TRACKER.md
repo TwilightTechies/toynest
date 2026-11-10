@@ -68,7 +68,7 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 3.3 | Path-specific rules (`paths:` globs) vs subdirectory CLAUDE.md | `supabase-migrations.md` rule | Done | Low | 0.5/1 |
 | 3.4 | Plan mode vs direct execution; Explore subagent | Used for schema/agent design | Pending | Medium | 3/3 |
 | 3.5 | Iterative refinement: I/O examples, test-driven, interview pattern, batch vs sequential fixes | – | Pending | Low | 1/1 (one item only) |
-| 3.6 | CI/CD: `-p`, `--output-format json`, `--json-schema`, independent reviewer, dedupe findings | GitHub Actions + Claude review | Pending | Low | 1.5/2 (self-review trap) |
+| 3.6 | CI/CD: `-p`, `--output-format json`, `--json-schema`, independent reviewer, dedupe findings | GitHub Actions + Claude review | Pending | Medium | Mocks: 4 misses (`-p` ×2, CLAUDE.md in CI, self-review). Focused session 10 Nov: 6/6 checks + retest 7/7 letters (reasons 5/7: T1 picked "interactive formats consistently", T3 "runner home loads first") |
 | (practice) | Hooks & permissions in Claude Code (supports 1.4/1.5 concepts) | `block-main-commit` hook, deny rules | Done | Low | 0.5/1 (cal.) |
 
 ## Domain 4 — Prompt Engineering & Structured Output (20%)
@@ -107,6 +107,11 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 4 Nov | Day 4 D4 practice set (10 Qs) | 10/10 (100%) | – | – | – | 10/10 | – | Reasons restated the option rather than the why |
 | 5–6 Nov | Day 5 lesson checks (18 items) | 17/18 (94%) | – | – | – | – | 17/18 | 5.1 trim tool output at the boundary (chose a subagent returning the full JSON) |
 | 6 Nov | Day 5 D5 practice set (10 Qs) | 8/10 (80%) | – | – | – | – | 8/10 | Q10 the same "trim at the door" trap (2nd miss); Q7 letter slip; Q2 right letter but wrong reason (lost in the middle) |
+| 6 Nov | **Mock 1** (60 items; Support, Code Gen, Research, Extraction) | 45.5/60 (76%) | 11/16 (69%) | 6.5/11 (59%) | 8/12 (67%) | 12/12 (100%) | 8/9 (89%) | 3 marks lost to mechanics (letter-vs-reason slips on 26, 39; blank on 41) → 48.5 (81%) without them. Content: fork vs fresh (Q6, 2nd round), Pre vs PostToolUse (Q3), fix the tool description not the router (Q7), `/memory` vs `/compact` (Q18), `context: fork` (Q20), Explore subagent (Q23), env var expansion in shared `.mcp.json` (Q27), chaining vs dynamic (Q37, Q38), `-p` (Q58). Retests passed: trim at the door, lost in the middle, `@import`, skill scope, ambiguous few-shot, stated vs calculated total, resources vs tools, parallel spawns |
+| 6 Nov | Drill A (8 open "why" items on Mock 1 misses) | 5/8 | – | – | – | – | – | Fork vs fresh (3rd miss) and `-p` (2nd miss) re-taught |
+| 10 Nov | **Mock 2** (60 items; CI, Dev Productivity, Support, Research; local quiz page, 51 min active) | 54/60 (90%) | 15.5/16 (97%) | 10/11 (91%) | 8.5/12 (71%) | 11/12 (92%) | 9/9 (100%) | Meets the bar. Fixed: fork vs fresh (Q28, 29, 35, 51), Pre vs Post, `/memory`, `context: fork`, `${VAR}`, chaining vs dynamic. Still missing: `-p` (Q1, 3rd miss), CLAUDE.md for CI standards (Q3), self-review bias (Q7 open), schema checks form not facts (Q11), fix the tool description rather than the prompt (Q22, 2nd miss). No ✎ reasons given. D3 / 3.6 CI is the weakest area across both mocks (combined D3 69%) |
+| 10 Nov | D3 focus: CI lesson checks (6, two-part letter + why) | 6/6 (both parts) | – | – | 6/6 | – | – | None |
+| 10 Nov | D3 retest (15, two-part; 13 D3 + 2.1 + 4.3/4.4) | Letters 15/15 (100%); both parts 12/15 | – | 1/1 | 13/13 | 1/1 | – | Reasons: T1 and T3 picked trap reason 1; T7 believed batches have a latency SLA (they don't: up to 24 h, no SLA) |
 
 ## Daily log
 
@@ -117,5 +122,5 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 3 | 3 Nov | D2: tool descriptions, structured errors, tool distribution & `tool_choice`, MCP config & resources, built-in tools | `apps/mcp-server` (3 tools, 1 resource, error contract, 5 tests), `.mcp.json`, `/admin/mcp` explorer, MCP_DOCUMENTATION.md, ADR-008 | 10 ✓ / 0 ✗ (practice set) | Claude Code live MCP check needs a restart + server approval |
 | 4 | 4 Nov | D4: explicit criteria, few-shot, structured output, validation-retry, Batch API, independent review | `createDraftReviewer` (4 tests), `/admin/drafts/new` (writer + reviewer via server action), ADR-009 | 10 ✓ / 0 ✗ (practice set) | Live runs still wait for an API key; missing-key path verified |
 | 5 | 5–6 Nov | D5: case facts and trimming, escalation, error propagation, codebase exploration, human review and calibration, provenance | Support assistant on own loop: case facts, isolation layers 1–3, `ToolError`, `/support` chat with mock sign-in (10 new tests), ADR-010, PR #6 | 8 ✓ / 2 ✗ (practice set) | Supabase (Build B) moved to after the mocks by user decision; live chat waits for an API key; browser extension not connected, so only an HTTP smoke test |
-| 6 | 6 Nov | | | | |
-| 7 | 7 Nov | | | | |
+| 6 | 6 Nov | Mock 1 (all domains, 4 scenarios) | None (mock day) | 45.5 / 60 (76%) | Below the readiness bar (≥80% overall, no domain under 70%): D1, D2 and D3 under 70%. D4 perfect. Mock 2 on Day 7 covers CI and Developer Productivity plus 2 repeats |
+| 7 | 10 Nov | Mock 2 (all domains, 4 scenarios) | Local timed quiz page (`.mock/`, not committed) with pause and JSON export | 54 / 60 (90%) | Mock 2 meets the bar; Mock 1 didn't. Combined 82.9%: D1 83%, D2 75%, D3 69%, D4 96%, D5 94%. Not declared exam-ready: D3/CI (3.6) needs one focused session first |
