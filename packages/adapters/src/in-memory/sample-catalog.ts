@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import type { Category, CategoryRepository, Product, ProductRepository } from "@toynest/core";
 import { z } from "zod";
 
-const SampleCatalogSchema = z.object({
+export const SampleCatalogSchema = z.object({
   categories: z.array(
     z.object({ slug: z.string(), name: z.string(), requiredAttributes: z.array(z.string()) }),
   ),
@@ -19,6 +19,13 @@ const SampleCatalogSchema = z.object({
     }),
   ),
 });
+
+export type SampleProduct = z.infer<typeof SampleCatalogSchema>["products"][number];
+
+// Shared with the Supabase seed script, so both data sources describe products identically.
+export function describeSampleProduct(product: SampleProduct): string {
+  return `${product.name}. Ages ${product.ageRange}. Material: ${product.material}.`;
+}
 
 export interface Catalog {
   products: ProductRepository;
@@ -39,7 +46,7 @@ export async function loadSampleCatalog(filePath: string): Promise<Catalog> {
       id: randomUUID(),
       slug: product.slug,
       name: product.name,
-      description: `${product.name}. Ages ${product.ageRange}. Material: ${product.material}.`,
+      description: describeSampleProduct(product),
       categoryId,
       priceMinor: product.priceMinor,
       currency: product.currency,

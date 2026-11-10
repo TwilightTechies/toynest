@@ -1,7 +1,7 @@
 import "server-only";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { repoRoot } from "./catalog";
+import { repoRoot } from "./env";
 
 // Starts the ToyNest MCP server as a separate process and talks to it over stdio, exactly as
 // Claude Code does via .mcp.json. The web app never imports the server's code.

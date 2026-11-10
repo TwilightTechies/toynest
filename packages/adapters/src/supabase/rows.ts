@@ -1,0 +1,113 @@
+import {
+  CategorySchema,
+  CustomerSchema,
+  OrderSchema,
+  ProductSchema,
+  type Category,
+  type Customer,
+  type Order,
+  type Product,
+} from "@toynest/core";
+import { z } from "zod";
+
+// Every row is validated on the way out of the database (an external boundary), then mapped to
+// the domain type and validated again, so a schema drift fails loudly in the adapter.
+
+export const PRODUCT_COLUMNS = "id, slug, name, description, category_id, price_minor, currency, status";
+
+export const ProductRowSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category_id: z.string(),
+  price_minor: z.number().int(),
+  currency: z.string(),
+  status: z.string(),
+});
+
+export const SearchRowSchema = ProductRowSchema.extend({ total_count: z.coerce.number().int() });
+
+export function toProduct(row: unknown): Product {
+  const r = ProductRowSchema.parse(row);
+  return ProductSchema.parse({
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    description: r.description,
+    categoryId: r.category_id,
+    priceMinor: r.price_minor,
+    currency: r.currency,
+    status: r.status,
+  });
+}
+
+export const CATEGORY_COLUMNS = "id, slug, name, required_attributes";
+
+const CategoryRowSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  required_attributes: z.array(z.string()),
+});
+
+export function toCategory(row: unknown): Category {
+  const r = CategoryRowSchema.parse(row);
+  return CategorySchema.parse({ id: r.id, slug: r.slug, name: r.name, requiredAttributes: r.required_attributes });
+}
+
+export const CUSTOMER_COLUMNS = "id, name, email";
+
+export function toCustomer(row: unknown): Customer {
+  return CustomerSchema.parse(z.object({ id: z.string(), name: z.string(), email: z.string() }).parse(row));
+}
+
+// Order with its items embedded (PostgREST resource embedding over the order_items foreign key).
+export const ORDER_COLUMNS =
+  "order_number, customer_id, status, placed_at, delivered_at, total_minor, refunded_minor, currency, " +
+  "order_items(product_slug, product_name, quantity, unit_price_minor, created_at)";
+
+const OrderRowSchema = z.object({
+  order_number: z.string(),
+  customer_id: z.string(),
+  status: z.string(),
+  placed_at: z.string(),
+  delivered_at: z.string().nullable(),
+  total_minor: z.number().int(),
+  refunded_minor: z.number().int(),
+  currency: z.string(),
+  order_items: z.array(
+    z.object({
+      product_slug: z.string(),
+      product_name: z.string(),
+      quantity: z.number().int(),
+      unit_price_minor: z.number().int(),
+      created_at: z.string(),
+    }),
+  ),
+});
+
+// Postgres returns "2026-10-29T09:12:00+00:00"; the domain uses UTC ISO strings ("...Z").
+const toIsoUtc = (value: string) => new Date(value).toISOString();
+
+export function toOrder(row: unknown): Order {
+  const r = OrderRowSchema.parse(row);
+  return OrderSchema.parse({
+    id: r.order_number,
+    customerId: r.customer_id,
+    status: r.status,
+    placedAt: toIsoUtc(r.placed_at),
+    deliveredAt: r.delivered_at === null ? null : toIsoUtc(r.delivered_at),
+    totalMinor: r.total_minor,
+    refundedMinor: r.refunded_minor,
+    currency: r.currency,
+    items: [...r.order_items]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .map((item) => ({
+        productSlug: item.product_slug,
+        name: item.product_name,
+        quantity: item.quantity,
+        unitPriceMinor: item.unit_price_minor,
+      })),
+  });
+}

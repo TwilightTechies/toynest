@@ -12,7 +12,7 @@ import { z } from "zod";
 
 // Raw rows carry warehouse and carrier fields the domain does not need. Parsing with the domain
 // schema drops them: the first trim happens here, at the adapter boundary.
-const SampleSupportSchema = z.object({
+export const SampleSupportSchema = z.object({
   customers: z.array(CustomerSchema),
   orders: z.array(OrderSchema.extend({ simulateOutage: z.boolean().optional() })),
 });
