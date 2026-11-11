@@ -1,7 +1,5 @@
 import "server-only";
-import path from "node:path";
 import { createAnthropicProvider } from "@toynest/adapters/anthropic";
-import { loadSampleSupport } from "@toynest/adapters/sample-support";
 import {
   createSupportAssistant,
   renderCaseFacts,
@@ -10,8 +8,8 @@ import {
   type ToolActivity,
 } from "@toynest/ai";
 import { cookies } from "next/headers";
-import { loadRootEnv } from "./ai";
-import { dataDir } from "./catalog";
+import { getRepositories } from "./data";
+import { loadRootEnv } from "./env";
 
 export const MAX_AUTO_REFUND_MINOR = 5000;
 
@@ -56,8 +54,10 @@ export async function currentConversation(): Promise<{ id: string; stored: Store
   return stored && stored.conversation.customerId === customerId ? { id, stored } : null;
 }
 
+// Supabase when configured, otherwise the sample JSON (see lib/data.ts).
 export async function loadSupportData() {
-  return loadSampleSupport(path.join(dataDir, "sample-support.json"));
+  const { customers, orders, demoCustomers } = await getRepositories();
+  return { customers, orders, sampleCustomers: await demoCustomers() };
 }
 
 // Returns null when no API key is configured, so the page can explain instead of crashing.

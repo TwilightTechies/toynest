@@ -1,10 +1,5 @@
 import "server-only";
-import path from "node:path";
-import { loadSampleCatalog } from "@toynest/adapters/sample-catalog";
-
-// `next dev` runs with apps/web as the working directory.
-export const repoRoot = path.join(process.cwd(), "../..");
-export const dataDir = path.join(repoRoot, "data");
+import { getRepositories, type DataSource } from "./data";
 
 export interface CatalogItem {
   slug: string;
@@ -14,22 +9,34 @@ export interface CatalogItem {
   price: string;
 }
 
-// Reads through the core ports (ProductRepository / CategoryRepository), so swapping the
-// sample file for Supabase later changes only this adapter call.
-export async function listCatalog(): Promise<CatalogItem[]> {
-  "use cache";
-  const { products, categories } = await loadSampleCatalog(path.join(dataDir, "sample-catalog.json"));
-  const categoryNames = new Map((await categories.list()).map((category) => [category.id, category.name]));
-  const { items } = await products.search({ limit: 100, offset: 0 });
+export interface CatalogPage {
+  source: DataSource;
+  query: string;
+  items: CatalogItem[];
+  total: number;
+}
 
-  // Prices are formatted on the server from integer minor units.
-  return items.map((product) => ({
-    slug: product.slug,
-    name: product.name,
-    description: product.description,
-    categoryName: categoryNames.get(product.categoryId) ?? "Uncategorised",
-    price: new Intl.NumberFormat("en-GB", { style: "currency", currency: product.currency }).format(
-      product.priceMinor / 100,
-    ),
-  }));
+// Reads through the core ports (ProductRepository / CategoryRepository), so the page does not know
+// whether the data comes from Supabase or the sample file.
+export async function listCatalog(query = ""): Promise<CatalogPage> {
+  "use cache";
+  const { source, products, categories } = await getRepositories();
+  const categoryNames = new Map((await categories.list()).map((category) => [category.id, category.name]));
+  const { items, total } = await products.search({ text: query, limit: 100, offset: 0 });
+
+  return {
+    source,
+    query,
+    total,
+    // Prices are formatted on the server from integer minor units.
+    items: items.map((product) => ({
+      slug: product.slug,
+      name: product.name,
+      description: product.description,
+      categoryName: categoryNames.get(product.categoryId) ?? "Uncategorised",
+      price: new Intl.NumberFormat("en-GB", { style: "currency", currency: product.currency }).format(
+        product.priceMinor / 100,
+      ),
+    })),
+  };
 }

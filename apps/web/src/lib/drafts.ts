@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ProductBriefSchema, ProductDraftSchema } from "@toynest/ai";
 import { z } from "zod";
-import { dataDir } from "./catalog";
+import { dataDir } from "./env";
 
 // Same contract the assistants must satisfy; the file is an external boundary, so validate it.
 const SampleDraftSchema = z.object({
