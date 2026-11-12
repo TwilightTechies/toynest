@@ -112,6 +112,7 @@ Confidence: `Not started` · `Low` · `Medium` · `High` (High = ≥80% on that 
 | 10 Nov | **Mock 2** (60 items; CI, Dev Productivity, Support, Research; local quiz page, 51 min active) | 54/60 (90%) | 15.5/16 (97%) | 10/11 (91%) | 8.5/12 (71%) | 11/12 (92%) | 9/9 (100%) | Meets the bar. Fixed: fork vs fresh (Q28, 29, 35, 51), Pre vs Post, `/memory`, `context: fork`, `${VAR}`, chaining vs dynamic. Still missing: `-p` (Q1, 3rd miss), CLAUDE.md for CI standards (Q3), self-review bias (Q7 open), schema checks form not facts (Q11), fix the tool description rather than the prompt (Q22, 2nd miss). No ✎ reasons given. D3 / 3.6 CI is the weakest area across both mocks (combined D3 69%) |
 | 10 Nov | D3 focus: CI lesson checks (6, two-part letter + why) | 6/6 (both parts) | – | – | 6/6 | – | – | None |
 | 10 Nov | D3 retest (15, two-part; 13 D3 + 2.1 + 4.3/4.4) | Letters 15/15 (100%); both parts 12/15 | – | 1/1 | 13/13 | 1/1 | – | Reasons: T1 and T3 picked trap reason 1; T7 believed batches have a latency SLA (they don't: up to 24 h, no SLA) |
+| 12 Nov | Gap set (16, two-part; guide topics untested in Mocks 1–2; quiz page, 16.5 min active) | Letters 13/16 (81%); both parts 12/16 (75%) | 1/1 | 5/6 | 2/3 | 3/4 | 2/2 | Domain columns = letters. G7 wrapper aliases (chose case-insensitive "refund" grep; list exported names, then grep each); G10 interacting fixes go together in one message (chose one at a time); G12 batch SLA window maths (worst case = wait + 24 h); G4 right letter, trap reason 3 |
 
 ## Daily log
 
