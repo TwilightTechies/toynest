@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CategoryRepository, CustomerRepository, OrderRepository, ProductRepository } from "@toynest/core";
 import { describe, expect, it } from "vitest";
-import { SampleCatalogSchema } from "../in-memory/sample-catalog";
+import { SampleCatalogSchema, type SampleProduct } from "../in-memory/sample-catalog";
 import { SampleSupportSchema } from "../in-memory/sample-support";
 
 export interface ContractSubject {
@@ -76,6 +76,43 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
           catalog.products.find((p) => p.slug === "wooden-number-puzzle")!.priceMinor,
         );
         expect(await products.findBySlug("no-such-product")).toBeNull();
+      });
+
+      it("returns attributes and the date added with each product", async () => {
+        const product = await (await subject()).products.findBySlug("wooden-number-puzzle");
+        const sample = catalog.products.find((p) => p.slug === "wooden-number-puzzle")!;
+        expect(product?.attributes).toEqual({ ageRange: sample.ageRange, material: sample.material });
+        expect(product?.createdAt).toBe(`${sample.addedOn}T00:00:00.000Z`);
+      });
+
+      // Expected orders are computed from the JSON with the same tie-break (name) as the SQL.
+      const byName = (a: SampleProduct, b: SampleProduct) => a.name.localeCompare(b.name);
+      const expectedOrder: Record<"price-asc" | "price-desc" | "newest" | "name", (a: SampleProduct, b: SampleProduct) => number> = {
+        "price-asc": (a, b) => a.priceMinor - b.priceMinor || byName(a, b),
+        "price-desc": (a, b) => b.priceMinor - a.priceMinor || byName(a, b),
+        newest: (a, b) => b.addedOn.localeCompare(a.addedOn) || byName(a, b),
+        name: byName,
+      };
+
+      it.each(Object.keys(expectedOrder) as (keyof typeof expectedOrder)[])("sorts by %s", async (sort) => {
+        const { items } = await (await subject()).products.search({ sort, limit: 100, offset: 0 });
+        expect(items.map((p) => p.slug)).toEqual([...catalog.products].sort(expectedOrder[sort]).map((p) => p.slug));
+      });
+
+      it("keeps the sort order across pages", async () => {
+        const { products } = await subject();
+        const page1 = await products.search({ sort: "price-asc", limit: 3, offset: 0 });
+        const page2 = await products.search({ sort: "price-asc", limit: 3, offset: 3 });
+        const all = await products.search({ sort: "price-asc", limit: 6, offset: 0 });
+        expect([...page1.items, ...page2.items].map((p) => p.slug)).toEqual(all.items.map((p) => p.slug));
+      });
+
+      it("filters by an inclusive price range, with the filtered total", async () => {
+        const { products } = await subject();
+        const inRange = catalog.products.filter((p) => p.priceMinor >= 599 && p.priceMinor <= 1299);
+        const { items, total } = await products.search({ minPriceMinor: 599, maxPriceMinor: 1299, limit: 100, offset: 0 });
+        expect(total).toBe(inRange.length);
+        expect(items.map((p) => p.slug).sort()).toEqual(inRange.map((p) => p.slug).sort());
       });
     });
 

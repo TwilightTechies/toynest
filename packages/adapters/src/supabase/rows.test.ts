@@ -10,6 +10,8 @@ const productRow = {
   price_minor: 1299,
   currency: "GBP",
   status: "active",
+  attributes: { ageRange: "3-5 years", material: "Wood" },
+  created_at: "2026-08-04T00:00:00+00:00",
 };
 
 const orderRow = {
@@ -30,6 +32,17 @@ const orderRow = {
 describe("toProduct", () => {
   it("maps snake_case columns to the domain product", () => {
     expect(toProduct(productRow)).toMatchObject({ categoryId: productRow.category_id, priceMinor: 1299, status: "active" });
+  });
+
+  it("maps attributes and normalises created_at to UTC ISO", () => {
+    expect(toProduct(productRow)).toMatchObject({
+      attributes: { ageRange: "3-5 years", material: "Wood" },
+      createdAt: "2026-08-04T00:00:00.000Z",
+    });
+  });
+
+  it("rejects non-string attribute values (jsonb drift)", () => {
+    expect(() => toProduct({ ...productRow, attributes: { ageRange: 3 } })).toThrow();
   });
 
   it("rejects a row whose price is not integer pence", () => {

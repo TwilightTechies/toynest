@@ -3,8 +3,9 @@
 Deferred by ADR-001. Pick up after 7 Nov 2026.
 
 ## Storefront
-- [ ] Home page sections: hero, featured, new arrivals, best sellers, promo
-- [ ] Price filter, sorting, pagination polish
+- [x] Home page sections: hero, shop by category, new arrivals, under £10 (ADR-012)
+- [ ] Home page: featured and best sellers (needs a featured flag / order aggregate)
+- [x] Product detail page, category browsing, price filter, sorting, pagination (ADR-012)
 - [ ] Product variants (colour/size) selection UI
 - [ ] Customised products: personalised text, colour, instructions, image upload (Supabase Storage)
 - [ ] Cart: add/remove, quantities, customisation details, subtotal/discount/shipping/total
