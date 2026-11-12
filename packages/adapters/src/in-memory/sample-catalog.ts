@@ -16,6 +16,8 @@ export const SampleCatalogSchema = z.object({
       currency: z.string().length(3),
       ageRange: z.string(),
       material: z.string(),
+      // "name" = the shopper must give a name to engrave (validatePersonalisation in core).
+      personalisation: z.literal("name").optional(),
       // Date the product was added to the shop; drives the "newest" sort and "New arrivals".
       addedOn: z.iso.date(),
     }),
@@ -26,7 +28,11 @@ export type SampleProduct = z.infer<typeof SampleCatalogSchema>["products"][numb
 
 // Shared with the Supabase seed script, so both data sources hold identical attributes and dates.
 export function sampleProductAttributes(product: SampleProduct): Record<string, string> {
-  return { ageRange: product.ageRange, material: product.material };
+  return {
+    ageRange: product.ageRange,
+    material: product.material,
+    ...(product.personalisation ? { personalisation: product.personalisation } : {}),
+  };
 }
 
 export function sampleProductCreatedAt(product: SampleProduct): string {
@@ -85,6 +91,10 @@ const comparators: Record<ProductSort, ((a: Product, b: Product) => number) | nu
 export function createInMemoryProductRepository(products: Product[]): ProductRepository {
   return {
     findBySlug: async (slug) => products.find((product) => product.slug === slug) ?? null,
+    findByIds: async (ids) => {
+      const wanted = new Set(ids);
+      return products.filter((product) => wanted.has(product.id));
+    },
     search: async ({ text = "", categoryId, minPriceMinor, maxPriceMinor, sort = "relevance", limit, offset }) => {
       const words = text.toLowerCase().split(/\s+/).filter(Boolean);
       const matches = products.filter((product) => {

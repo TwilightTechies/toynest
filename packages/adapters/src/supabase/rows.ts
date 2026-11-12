@@ -1,12 +1,16 @@
 import {
+  CartSchema,
   CategorySchema,
   CustomerSchema,
   OrderSchema,
   ProductSchema,
+  ShippingZoneSchema,
+  type Cart,
   type Category,
   type Customer,
   type Order,
   type Product,
+  type ShippingZone,
 } from "@toynest/core";
 import { z } from "zod";
 
@@ -115,5 +119,64 @@ export function toOrder(row: unknown): Order {
         quantity: item.quantity,
         unitPriceMinor: item.unit_price_minor,
       })),
+  });
+}
+
+// Basket with its lines embedded (PostgREST resource embedding over cart_items.cart_id).
+export const CART_COLUMNS = "id, pincode, cart_items(id, product_id, quantity, personalisation_name, created_at)";
+
+const CartRowSchema = z.object({
+  id: z.string(),
+  pincode: z.string().nullable(),
+  cart_items: z.array(
+    z.object({
+      id: z.string(),
+      product_id: z.string(),
+      quantity: z.number().int(),
+      personalisation_name: z.string().nullable(),
+      created_at: z.string(),
+    }),
+  ),
+});
+
+export function toCart(row: unknown): Cart {
+  const r = CartRowSchema.parse(row);
+  return CartSchema.parse({
+    id: r.id,
+    pincode: r.pincode,
+    // Oldest line first, so the basket keeps the order things were added in.
+    lines: [...r.cart_items]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+      .map((item) => ({
+        id: item.id,
+        productId: item.product_id,
+        quantity: item.quantity,
+        personalisationName: item.personalisation_name,
+      })),
+  });
+}
+
+export const SHIPPING_ZONE_COLUMNS = "id, slug, name, fee_minor, free_over_minor, pincode_prefixes, is_default";
+
+const ShippingZoneRowSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  fee_minor: z.number().int(),
+  free_over_minor: z.number().int().nullable(),
+  pincode_prefixes: z.array(z.string()),
+  is_default: z.boolean(),
+});
+
+export function toShippingZone(row: unknown): ShippingZone {
+  const r = ShippingZoneRowSchema.parse(row);
+  return ShippingZoneSchema.parse({
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    feeMinor: r.fee_minor,
+    freeOverMinor: r.free_over_minor,
+    pincodePrefixes: r.pincode_prefixes,
+    isDefault: r.is_default,
   });
 }

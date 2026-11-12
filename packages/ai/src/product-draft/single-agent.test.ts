@@ -32,6 +32,7 @@ const productList: Product[] = [
 
 const products: ProductRepository = {
   findBySlug: async (slug) => productList.find((product) => product.slug === slug) ?? null,
+  findByIds: async (ids) => productList.filter((product) => ids.includes(product.id)),
   search: async ({ text = "", limit }) => {
     const words = text.toLowerCase().split(/\s+/);
     const items = productList.filter((p) => words.some((word) => p.name.toLowerCase().includes(word))).slice(0, limit);

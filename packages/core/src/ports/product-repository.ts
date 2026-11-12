@@ -15,5 +15,7 @@ export interface ProductSearchQuery {
 // Port: implemented by an adapter (e.g. Supabase). Core never imports a vendor SDK.
 export interface ProductRepository {
   findBySlug(slug: string): Promise<Product | null>;
+  // Any status (callers decide what an inactive product means); unknown ids are simply absent.
+  findByIds(ids: string[]): Promise<Product[]>;
   search(query: ProductSearchQuery): Promise<{ items: Product[]; total: number }>;
 }

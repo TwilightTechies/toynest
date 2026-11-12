@@ -1,23 +1,29 @@
 import type {
+  CartRepository,
   CategoryRepository,
   Customer,
   CustomerRepository,
   OrderRepository,
   ProductRepository,
+  ShippingZoneRepository,
 } from "@toynest/core";
 import { z } from "zod";
 import type { SupabaseClient } from "./client";
 import { toRepositoryError } from "./errors";
 import {
+  CART_COLUMNS,
   CATEGORY_COLUMNS,
   CUSTOMER_COLUMNS,
   ORDER_COLUMNS,
   PRODUCT_COLUMNS,
   SearchRowSchema,
+  SHIPPING_ZONE_COLUMNS,
+  toCart,
   toCategory,
   toCustomer,
   toOrder,
   toProduct,
+  toShippingZone,
 } from "./rows";
 
 const isUuid = (value: string) => z.uuid().safeParse(value).success;
@@ -29,6 +35,13 @@ export function createSupabaseProductRepository(client: SupabaseClient): Product
       const result = await client.from("products").select(PRODUCT_COLUMNS).eq("slug", slug).maybeSingle();
       if (result.error) throw toRepositoryError(result, "products.findBySlug");
       return result.data ? toProduct(result.data) : null;
+    },
+    async findByIds(ids) {
+      const valid = ids.filter(isUuid);
+      if (valid.length === 0) return [];
+      const result = await client.from("products").select(PRODUCT_COLUMNS).in("id", valid);
+      if (result.error) throw toRepositoryError(result, "products.findByIds");
+      return z.array(z.unknown()).parse(result.data).map(toProduct);
     },
     async search({ text, categoryId, minPriceMinor, maxPriceMinor, sort = "relevance", limit, offset }) {
       const result = await client.rpc("search_products", {
@@ -54,6 +67,68 @@ export function createSupabaseCategoryRepository(client: SupabaseClient): Catego
       const result = await client.from("categories").select(CATEGORY_COLUMNS).order("name");
       if (result.error) throw toRepositoryError(result, "categories.list");
       return z.array(z.unknown()).parse(result.data).map(toCategory);
+    },
+  };
+}
+
+// Baskets. The cart id is the secret from the shopper's cookie: every query filters by it, and a
+// line id is only ever changed together with its cart id (a line from another cart = not found).
+export function createSupabaseCartRepository(client: SupabaseClient): CartRepository {
+  const read = async (cartId: string) => {
+    if (!isUuid(cartId)) return null;
+    const result = await client.from("carts").select(CART_COLUMNS).eq("id", cartId).maybeSingle();
+    if (result.error) throw toRepositoryError(result, "carts.get");
+    return result.data ? toCart(result.data) : null;
+  };
+
+  return {
+    async create() {
+      const result = await client.from("carts").insert({}).select(CART_COLUMNS).single();
+      if (result.error) throw toRepositoryError(result, "carts.create");
+      return toCart(result.data);
+    },
+    get: read,
+    async addLine(cartId, { productId, personalisationName, quantity }) {
+      // Atomic insert-or-increment in SQL (add_cart_line), capped at 10.
+      const result = await client.rpc("add_cart_line", {
+        cart: cartId,
+        product: productId,
+        personalisation: personalisationName,
+        add_quantity: quantity,
+      });
+      if (result.error) throw toRepositoryError(result, "carts.addLine");
+    },
+    async setQuantity(cartId, lineId, quantity) {
+      if (!isUuid(cartId) || !isUuid(lineId)) return false;
+      const result = await client
+        .from("cart_items")
+        .update({ quantity })
+        .eq("cart_id", cartId)
+        .eq("id", lineId)
+        .select("id");
+      if (result.error) throw toRepositoryError(result, "carts.setQuantity");
+      return z.array(z.unknown()).parse(result.data).length === 1;
+    },
+    async removeLine(cartId, lineId) {
+      if (!isUuid(cartId) || !isUuid(lineId)) return false;
+      const result = await client.from("cart_items").delete().eq("cart_id", cartId).eq("id", lineId).select("id");
+      if (result.error) throw toRepositoryError(result, "carts.removeLine");
+      return z.array(z.unknown()).parse(result.data).length === 1;
+    },
+    async setPincode(cartId, pincode) {
+      if (!isUuid(cartId)) return;
+      const result = await client.from("carts").update({ pincode }).eq("id", cartId);
+      if (result.error) throw toRepositoryError(result, "carts.setPincode");
+    },
+  };
+}
+
+export function createSupabaseShippingZoneRepository(client: SupabaseClient): ShippingZoneRepository {
+  return {
+    async list() {
+      const result = await client.from("shipping_zones").select(SHIPPING_ZONE_COLUMNS).order("name");
+      if (result.error) throw toRepositoryError(result, "shippingZones.list");
+      return z.array(z.unknown()).parse(result.data).map(toShippingZone);
     },
   };
 }
@@ -111,5 +186,7 @@ export function createSupabaseRepositories(client: SupabaseClient) {
     categories: createSupabaseCategoryRepository(client),
     customers: createSupabaseCustomerRepository(client),
     orders: createSupabaseOrderRepository(client),
+    carts: createSupabaseCartRepository(client),
+    shippingZones: createSupabaseShippingZoneRepository(client),
   };
 }

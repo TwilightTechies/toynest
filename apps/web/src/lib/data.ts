@@ -1,5 +1,6 @@
 import "server-only";
 import path from "node:path";
+import { createInMemoryCartRepository, loadShippingZones } from "@toynest/adapters/sample-cart";
 import { loadSampleCatalog } from "@toynest/adapters/sample-catalog";
 import { loadSampleSupport } from "@toynest/adapters/sample-support";
 import {
@@ -10,11 +11,13 @@ import {
   type SupabaseClient,
 } from "@toynest/adapters/supabase";
 import type {
+  CartRepository,
   CategoryRepository,
   Customer,
   CustomerRepository,
   OrderRepository,
   ProductRepository,
+  ShippingZoneRepository,
 } from "@toynest/core";
 import { dataDir, loadRootEnv } from "./env";
 
@@ -26,11 +29,16 @@ export interface Repositories {
   categories: CategoryRepository;
   customers: CustomerRepository;
   orders: OrderRepository;
+  carts: CartRepository;
+  shippingZones: ShippingZoneRepository;
   // Demo-only list for the mock sign-in on /support.
   demoCustomers(): Promise<Customer[]>;
 }
 
 let serviceClient: SupabaseClient | undefined;
+// Sample mode is built once per server process: the loaders give products new random ids on every
+// load, and a basket line must keep pointing at the same product between requests.
+let sampleRepositories: Promise<Repositories> | undefined;
 
 // Composition root: the only place that decides which adapters the app uses.
 // Supabase when configured, otherwise the synthetic sample JSON, so the app runs with no setup.
@@ -47,6 +55,11 @@ export async function getRepositories(): Promise<Repositories> {
     return { source: "supabase", ...createSupabaseRepositories(client), demoCustomers: () => listDemoCustomers(client) };
   }
 
+  sampleRepositories ??= loadSampleRepositories();
+  return sampleRepositories;
+}
+
+async function loadSampleRepositories(): Promise<Repositories> {
   const catalog = await loadSampleCatalog(path.join(dataDir, "sample-catalog.json"));
   const support = await loadSampleSupport(path.join(dataDir, "sample-support.json"));
   return {
@@ -54,6 +67,8 @@ export async function getRepositories(): Promise<Repositories> {
     ...catalog,
     customers: support.customers,
     orders: support.orders,
+    carts: createInMemoryCartRepository(),
+    shippingZones: await loadShippingZones(path.join(dataDir, "shipping-zones.json")),
     demoCustomers: async () => support.sampleCustomers,
   };
 }

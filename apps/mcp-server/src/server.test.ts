@@ -81,6 +81,7 @@ describe("ToyNest MCP server", () => {
   it("reports a failing repository as a retryable transient error instead of an empty list", async () => {
     const timingOut: ProductRepository = {
       findBySlug: () => Promise.reject(new Error("timeout")),
+      findByIds: () => Promise.reject(new Error("timeout")),
       search: () => Promise.reject(new Error("timeout")),
     };
     const client = await connect({ ...deps, products: timingOut });

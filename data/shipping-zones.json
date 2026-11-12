@@ -1,0 +1,29 @@
+{
+  "_note": "Delivery charges by pincode zone (ADR-015). Money in paise. Longest matching prefix wins; other pincodes use the default zone. Loaded by the in-memory adapter and the Supabase seed.",
+  "zones": [
+    {
+      "slug": "metro",
+      "name": "Metro",
+      "feeMinor": 4900,
+      "freeOverMinor": 49900,
+      "pincodePrefixes": ["110", "400", "560", "600", "700", "500"],
+      "isDefault": false
+    },
+    {
+      "slug": "north-east-remote",
+      "name": "North-East & remote",
+      "feeMinor": 14900,
+      "freeOverMinor": 149900,
+      "pincodePrefixes": ["78", "79", "18", "19", "744"],
+      "isDefault": false
+    },
+    {
+      "slug": "rest-of-india",
+      "name": "Rest of India",
+      "feeMinor": 7900,
+      "freeOverMinor": 79900,
+      "pincodePrefixes": [],
+      "isDefault": true
+    }
+  ]
+}

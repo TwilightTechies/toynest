@@ -168,4 +168,36 @@ describe.skipIf(!ready)("RLS (isolation layer 4)", () => {
     expect((await anonymous.from("orders").select("id")).data).toEqual([]);
     expect((await anonymous.from("customers").select("id")).data).toEqual([]);
   });
+
+  // Carts are server-only (ADR-015): the public key can't see, create or change any basket, even
+  // one whose id it knows. Shipping rates are public.
+  it("baskets are server-only, for anonymous and signed-in users alike; delivery rates are public", async () => {
+    const cart = await admin.from("carts").insert({}).select("id").single();
+    expect(cart.error).toBeNull();
+    const cartId = (cart.data as { id: string }).id;
+    try {
+      const product = await admin.from("products").select("id").eq("status", "active").limit(1).single();
+      await admin.from("cart_items").insert({ cart_id: cartId, product_id: (product.data as { id: string }).id, quantity: 1 });
+
+      for (const client of [anonymous, asA]) {
+        expect((await client.from("carts").select("id").eq("id", cartId)).data).toEqual([]);
+        expect((await client.from("cart_items").select("id").eq("cart_id", cartId)).data).toEqual([]);
+        expect((await client.from("carts").insert({}).select("id")).error).not.toBeNull();
+        await client.from("cart_items").update({ quantity: 9 }).eq("cart_id", cartId);
+        // The RPC runs as the caller (security invoker), so RLS stops it too.
+        expect(
+          (await client.rpc("add_cart_line", { cart: cartId, product: (product.data as { id: string }).id, personalisation: null, add_quantity: 1 })).error,
+        ).not.toBeNull();
+      }
+      const items = await admin.from("cart_items").select("quantity").eq("cart_id", cartId);
+      expect(items.data).toEqual([{ quantity: 1 }]);
+
+      const zones = await anonymous.from("shipping_zones").select("slug, fee_minor");
+      expect(zones.error).toBeNull();
+      expect((zones.data ?? []).length).toBeGreaterThan(0);
+      expect((await anonymous.from("shipping_zones").update({ fee_minor: 0 }).eq("slug", "metro").select("id")).data ?? []).toEqual([]);
+    } finally {
+      await admin.from("carts").delete().eq("id", cartId);
+    }
+  });
 });

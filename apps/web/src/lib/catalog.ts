@@ -2,6 +2,7 @@ import "server-only";
 import {
   CATALOG_PAGE_SIZE,
   formatMoney,
+  isPersonalisable,
   SlugSchema,
   type CatalogParams,
   type Category,
@@ -38,6 +39,8 @@ export interface CatalogPage {
 
 export interface ProductDetail extends CatalogItem {
   attributes: { label: string; value: string }[];
+  // Needs a name to engrave before it can go in the basket (attributes.personalisation = "name").
+  personalisable: boolean;
 }
 
 // Prices are formatted on the server from integer minor units; the client never computes money.
@@ -121,7 +124,12 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
   const categoriesById = new Map((await categories.list()).map((category) => [category.id, category]));
   return {
     ...toItem(product, categoriesById),
-    attributes: Object.entries(product.attributes).map(([key, value]) => ({ label: labelFor(key), value })),
+    attributes: Object.entries(product.attributes).map(([key, value]) =>
+      key === "personalisation" && value === "name"
+        ? { label: "Personalisation", value: "Engraved with a name (up to 20 characters)" }
+        : { label: labelFor(key), value },
+    ),
+    personalisable: isPersonalisable(product),
   };
 }
 

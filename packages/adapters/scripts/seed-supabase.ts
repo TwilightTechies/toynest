@@ -11,6 +11,7 @@ import {
   sampleProductAttributes,
   sampleProductCreatedAt,
 } from "../src/in-memory/sample-catalog";
+import { ShippingZonesFileSchema } from "../src/in-memory/sample-cart";
 import { SampleSupportSchema } from "../src/in-memory/sample-support";
 import { createSupabaseClient, readSupabaseEnv, type SupabaseClient } from "../src/supabase/client";
 
@@ -40,11 +41,30 @@ async function main() {
 
   const catalog = SampleCatalogSchema.parse(await readJson("sample-catalog.json"));
   const support = SampleSupportSchema.parse(await readJson("sample-support.json"));
+  const shipping = ShippingZonesFileSchema.parse(await readJson("shipping-zones.json"));
 
   const categoryIds = await upsert(
     client,
     "categories",
     catalog.categories.map((c) => ({ slug: c.slug, name: c.name, required_attributes: c.requiredAttributes })),
+    "slug",
+  );
+
+  // Delivery rates (ADR-015). Clear the default flag first so a changed default never trips the
+  // one-default unique index halfway through the upsert.
+  const cleared = await client.from("shipping_zones").update({ is_default: false }).eq("is_default", true);
+  if (cleared.error) throw new Error(`Clearing the default shipping zone failed: ${cleared.error.message}`);
+  const zoneIds = await upsert(
+    client,
+    "shipping_zones",
+    shipping.zones.map((z) => ({
+      slug: z.slug,
+      name: z.name,
+      fee_minor: z.feeMinor,
+      free_over_minor: z.freeOverMinor,
+      pincode_prefixes: z.pincodePrefixes,
+      is_default: z.isDefault,
+    })),
     "slug",
   );
 
@@ -119,7 +139,7 @@ async function main() {
   if (inserted.error) throw new Error(`Seeding order_items failed: ${inserted.error.message}`);
 
   console.log(
-    `Seeded ${categoryIds.size} categories, ${productIds.size} products, ` +
+    `Seeded ${categoryIds.size} categories, ${productIds.size} products, ${zoneIds.size} shipping zones, ` +
       `${customerIdsByEmail.size} customers, ${orderIds.size} orders, ${items.length} order items.`,
   );
 }
