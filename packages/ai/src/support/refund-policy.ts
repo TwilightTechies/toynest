@@ -1,3 +1,4 @@
+import { formatMoney } from "@toynest/core";
 import { z } from "zod";
 import type { ToolHooks } from "../agent-loop";
 
@@ -24,10 +25,9 @@ export function refundPolicyHooks({ maxAutoRefundMinor }: { maxAutoRefundMinor: 
 
       // Threshold rule: large refunds are redirected to a human with a structured handoff.
       if (request.data.amountMinor > maxAutoRefundMinor) {
-        const limit = (maxAutoRefundMinor / 100).toFixed(2);
         return {
           block:
-            `Refunds above £${limit} need a human. Call escalate_to_human with customerId, orderId, ` +
+            `Refunds above ${formatMoney(maxAutoRefundMinor)} need a human. Call escalate_to_human with customerId, orderId, ` +
             "rootCause, refundAmountMinor and recommendedAction instead.",
         };
       }

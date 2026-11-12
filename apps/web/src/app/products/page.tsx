@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { formatPounds, parseCatalogParams, type CatalogParams, type ProductSort } from "@toynest/core";
+import { formatMajorUnits, parseCatalogParams, type CatalogParams, type ProductSort } from "@toynest/core";
 import { FilterPanel } from "@/components/filter-panel";
 import { Pagination } from "@/components/pagination";
 import { ProductGrid } from "@/components/product-card";
@@ -116,22 +116,22 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
         </select>
       </label>
       <label className={labelClass}>
-        Min £
+        Min ₹
         <input
           name="min"
           inputMode="decimal"
-          pattern="\d{1,5}(\.\d{1,2})?"
-          defaultValue={params.minPriceMinor === undefined ? "" : formatPounds(params.minPriceMinor)}
+          pattern="\d{1,7}(\.\d{1,2})?"
+          defaultValue={params.minPriceMinor === undefined ? "" : formatMajorUnits(params.minPriceMinor)}
           className={fieldClass}
         />
       </label>
       <label className={labelClass}>
-        Max £
+        Max ₹
         <input
           name="max"
           inputMode="decimal"
-          pattern="\d{1,5}(\.\d{1,2})?"
-          defaultValue={params.maxPriceMinor === undefined ? "" : formatPounds(params.maxPriceMinor)}
+          pattern="\d{1,7}(\.\d{1,2})?"
+          defaultValue={params.maxPriceMinor === undefined ? "" : formatMajorUnits(params.maxPriceMinor)}
           className={fieldClass}
         />
       </label>

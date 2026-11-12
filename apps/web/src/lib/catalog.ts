@@ -1,6 +1,7 @@
 import "server-only";
 import {
   CATALOG_PAGE_SIZE,
+  formatMoney,
   SlugSchema,
   type CatalogParams,
   type Category,
@@ -40,8 +41,7 @@ export interface ProductDetail extends CatalogItem {
 }
 
 // Prices are formatted on the server from integer minor units; the client never computes money.
-const formatPrice = (product: Product) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: product.currency }).format(product.priceMinor / 100);
+const formatPrice = (product: Product) => formatMoney(product.priceMinor, product.currency);
 
 // "ageRange" -> "Age range"
 const labelFor = (key: string) => {
@@ -131,7 +131,7 @@ export interface HomeSections {
   underTen: CatalogItem[];
 }
 
-export const UNDER_PRICE_MINOR = 1000;
+export const UNDER_PRICE_MINOR = 50000; // ₹500
 
 export async function getHomeSections(): Promise<HomeSections> {
   "use cache";

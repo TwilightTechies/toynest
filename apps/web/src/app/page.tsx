@@ -4,6 +4,7 @@ import { LogoMark } from "@/components/logo";
 import { ProductGrid } from "@/components/product-card";
 import { ProductImage } from "@/components/product-image";
 import { buttonClass, cardClass, SectionHeading } from "@/components/ui";
+import { formatMoney } from "@toynest/core";
 import { getHomeSections, UNDER_PRICE_MINOR, type CatalogItem } from "@/lib/catalog";
 
 // Learning-project pages built during the certification sprint, kept reachable from the home page.
@@ -81,7 +82,7 @@ export default function Home() {
 
 async function ShopSections() {
   const { categories, newArrivals, underTen } = await getHomeSections();
-  const underLabel = `Under £${UNDER_PRICE_MINOR / 100}`;
+  const underLabel = `Under ${formatMoney(UNDER_PRICE_MINOR)}`;
 
   return (
     <>

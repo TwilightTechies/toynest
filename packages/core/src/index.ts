@@ -1,6 +1,7 @@
 export * from "./domain/catalog-query";
 export * from "./domain/category";
 export * from "./domain/customer";
+export * from "./domain/money";
 export * from "./domain/order";
 export * from "./domain/product";
 export * from "./errors";

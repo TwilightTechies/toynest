@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { currentConversation, loadSupportData, toChatState } from "@/lib/support";
+import { formatMoney } from "@toynest/core";
+import { currentConversation, loadSupportData, MAX_AUTO_REFUND_MINOR, toChatState } from "@/lib/support";
 import { signIn, signOut } from "./actions";
 import { SupportChat } from "./support-chat";
 
@@ -15,7 +16,7 @@ export default function SupportPage() {
       </Link>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Customer support</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        A Claude support assistant with refunds up to £50, escalation to a human, and customer-data isolation. Synthetic
+        A Claude support assistant with refunds up to {formatMoney(MAX_AUTO_REFUND_MINOR)}, escalation to a human, and customer-data isolation. Synthetic
         customers and orders; refunds are mock-only.
       </p>
       <Suspense fallback={<p className="mt-8 text-sm text-zinc-500">Loading…</p>}>

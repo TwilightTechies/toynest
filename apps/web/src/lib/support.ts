@@ -11,7 +11,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "./data";
 import { loadRootEnv } from "./env";
 
-export const MAX_AUTO_REFUND_MINOR = 5000;
+export const MAX_AUTO_REFUND_MINOR = 200000; // ₹2,000
 
 // Cookie names for the demo. The customer cookie is a MOCK session standing in for Supabase Auth.
 export const CUSTOMER_COOKIE = "toynest_demo_customer";

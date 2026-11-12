@@ -146,7 +146,7 @@ export function createSupportTools(session: SupportSession, deps: SupportDeps): 
       name: "lookup_order",
       description:
         "Get one of the signed-in customer's orders by id (e.g. TN-1042): status, delivery date, total, amount already " +
-        "refunded, items and refundEligibleUntil. Amounts are in minor units (pence). Call this before any refund. " +
+        "refunded, items and refundEligibleUntil. Amounts are in minor units (paise; ₹1 = 100 paise). Call this before any refund. " +
         "Errors include errorCategory and isRetryable: 'transient' means try once more or tell the customer to try later; " +
         "'business' means the order is not on their account.",
       input: z.object({ orderId: OrderIdSchema }),
@@ -157,7 +157,7 @@ export function createSupportTools(session: SupportSession, deps: SupportDeps): 
       name: "process_refund",
       description:
         "Refund part or all of a delivered order (mock: no money moves). Requires get_customer and lookup_order for this " +
-        "order in an earlier turn. amountMinor is in pence and may not exceed the total minus what is already refunded. " +
+        "order in an earlier turn. amountMinor is in paise and may not exceed the total minus what is already refunded. " +
         "Refunds above the automatic limit are blocked; use escalate_to_human for those.",
       input: z.object({
         customerId: z.string(),
@@ -182,7 +182,7 @@ export function createSupportTools(session: SupportSession, deps: SupportDeps): 
         }
         const remaining = view.totalMinor - view.refundedMinor;
         if (amountMinor > remaining) {
-          throw new ToolError(`Only ${remaining} pence of order ${orderId} is left to refund.`, {
+          throw new ToolError(`Only ${remaining} paise of order ${orderId} is left to refund.`, {
             category: "validation",
             retryable: false,
           });

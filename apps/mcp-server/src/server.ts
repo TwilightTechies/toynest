@@ -60,7 +60,7 @@ export function createToyNestServer({ products, categories }: ServerDeps): McpSe
         "products and typical prices. Not for orders or customers. " +
         "query: plain keywords such as 'wooden puzzle' (optional if categorySlug is given). " +
         "categorySlug: a slug from get_categories, e.g. 'educational-toys'. " +
-        "Returns up to `limit` products with slug, name, categorySlug and priceMinor (pence). " +
+        "Returns up to `limit` products with slug, name, categorySlug and priceMinor (paise; ₹1 = 100 paise). " +
         "An empty list means no matching products, not an error: do not repeat the same search; " +
         "try broader keywords once or continue without matches.",
       inputSchema: {

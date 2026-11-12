@@ -59,7 +59,7 @@ const call = (id: string, name: string, input: unknown): ModelResponse["content"
 });
 const turn = (...content: ModelResponse["content"]): ModelResponse => ({ stopReason: "tool_use", content });
 const done: ModelResponse = { stopReason: "end_turn", content: [{ type: "text", text: "Done." }] };
-const policy = refundPolicyHooks({ maxAutoRefundMinor: 5000 });
+const policy = refundPolicyHooks({ maxAutoRefundMinor: 200000 });
 const base = { system: "You are ToyNest support.", prompt: "My puzzle arrived broken, refund please." };
 
 const resultOf = (requests: ReturnType<typeof scriptedProvider>["requests"], requestIndex: number) =>
@@ -68,7 +68,7 @@ const resultOf = (requests: ReturnType<typeof scriptedProvider>["requests"], req
 describe("refund policy hooks (PreToolUse)", () => {
   it("blocks a refund until get_customer has verified the customer", async () => {
     const { tools, refunds } = supportTools();
-    const refund = { customerId: "cus_1042", orderId: "ORD-2291", amountMinor: 2500 };
+    const refund = { customerId: "cus_1042", orderId: "ORD-2291", amountMinor: 125000 };
     const { provider, requests } = scriptedProvider([
       turn(call("t1", "process_refund", refund)),
       turn(call("t2", "get_customer", { email: "sam@example.com" })),
@@ -89,7 +89,7 @@ describe("refund policy hooks (PreToolUse)", () => {
     const { provider } = scriptedProvider([
       turn(
         call("t1", "get_customer", { email: "sam@example.com" }),
-        call("t2", "process_refund", { customerId: "cus_1042", orderId: "ORD-2291", amountMinor: 2500 }),
+        call("t2", "process_refund", { customerId: "cus_1042", orderId: "ORD-2291", amountMinor: 125000 }),
       ),
       done,
     ]);
@@ -105,12 +105,12 @@ describe("refund policy hooks (PreToolUse)", () => {
       customerId: "cus_1042",
       orderId: "ORD-2291",
       rootCause: "Puzzle arrived with a broken piece; customer sent a photo",
-      refundAmountMinor: 6499,
+      refundAmountMinor: 324900,
       recommendedAction: "Approve full refund",
     };
     const { provider, requests } = scriptedProvider([
       turn(call("t1", "get_customer", { email: "sam@example.com" })),
-      turn(call("t2", "process_refund", { customerId: "cus_1042", orderId: "ORD-2291", amountMinor: 6499 })),
+      turn(call("t2", "process_refund", { customerId: "cus_1042", orderId: "ORD-2291", amountMinor: 324900 })),
       turn(call("t3", "escalate_to_human", handoff)),
       done,
     ]);

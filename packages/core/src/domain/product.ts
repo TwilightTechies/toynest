@@ -6,7 +6,7 @@ export const SlugSchema = z
 
 export const ProductStatusSchema = z.enum(["draft", "active", "archived"]);
 
-// Money is held in minor units (e.g. pence) to avoid floating-point rounding.
+// Money is held in minor units (paise; ₹1 = 100 paise) to avoid floating-point rounding.
 export const ProductSchema = z.object({
   id: z.uuid(),
   slug: SlugSchema,

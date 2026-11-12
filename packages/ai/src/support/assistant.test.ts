@@ -14,19 +14,21 @@ const order = (overrides: Partial<Order>): Order => ({
   status: "delivered",
   placedAt: "2026-10-29T09:12:00Z",
   deliveredAt: "2026-11-02T14:05:00Z",
-  totalMinor: 4249,
+  totalMinor: 239800,
   refundedMinor: 0,
-  currency: "GBP",
-  items: [{ productSlug: "personalised-name-train", name: "Personalised Name Train", quantity: 1, unitPriceMinor: 4249 }],
+  currency: "INR",
+  items: [{ productSlug: "personalised-name-train", name: "Personalised Name Train", quantity: 1, unitPriceMinor: 239800 }],
   ...overrides,
 });
 
 const orders = [
   order({}),
-  order({ id: "TN-1063", customerId: priya.id, totalMinor: 6748 }),
+  order({ id: "TN-1063", customerId: priya.id, totalMinor: 389700 }),
   order({ id: "TN-1029", deliveredAt: "2026-09-20T13:10:00Z" }), // outside the 30-day window on 6 Nov
   order({ id: "TN-1051", status: "dispatched", deliveredAt: null }),
-  order({ id: "TN-1077", totalMinor: 9000 }), // above the £50 automatic limit
+  order({ id: "TN-1077", totalMinor: 250000 }), // above the ₹2,000 automatic limit
+  // Below the automatic limit, so an over-refund reaches the tool's "left to refund" check, not the hook.
+  order({ id: "TN-1048", totalMinor: 59900 }),
 ];
 
 const scopedRepo = (rows: Order[]): OrderRepository => ({
@@ -41,7 +43,7 @@ function setup(script: ModelResponse[], orderRepo: OrderRepository = scopedRepo(
     provider,
     customers: { findById: async (id) => [sam, priya].find((customer) => customer.id === id) ?? null },
     orders: orderRepo,
-    maxAutoRefundMinor: 5000,
+    maxAutoRefundMinor: 200000,
     now: () => new Date("2026-11-06T10:00:00Z"),
     newId: () => "TEST1",
   });
@@ -64,7 +66,7 @@ const resultsIn = (requests: ReturnType<typeof scriptedProvider>["requests"], in
 const refund = (overrides: object = {}) => ({
   customerId: sam.id,
   orderId: "TN-1042",
-  amountMinor: 2499,
+  amountMinor: 149900,
   reason: "Train arrived cracked",
   ...overrides,
 });
@@ -127,18 +129,18 @@ describe("refunds", () => {
   ];
 
   it("refunds a verified, looked-up order within policy and records it in case facts", async () => {
-    const { assistant } = setup(lookThenRefund("TN-1042", 2499));
+    const { assistant } = setup(lookThenRefund("TN-1042", 149900));
 
     const reply = await assistant.reply(startSupportConversation(sam.id), "train arrived cracked");
 
-    expect(reply.conversation.caseFacts.refunds).toEqual([{ refundId: "RF-TEST1", orderId: "TN-1042", amountMinor: 2499 }]);
-    expect(reply.conversation.caseFacts.orders["TN-1042"]?.refundedMinor).toBe(2499);
+    expect(reply.conversation.caseFacts.refunds).toEqual([{ refundId: "RF-TEST1", orderId: "TN-1042", amountMinor: 149900 }]);
+    expect(reply.conversation.caseFacts.orders["TN-1042"]?.refundedMinor).toBe(149900);
   });
 
   it.each([
     ["outside the refund window", "TN-1029", 1000, "business", "refund window"],
     ["not yet delivered", "TN-1051", 1000, "business", "only delivered orders"],
-    ["more than is left to refund", "TN-1042", 4250, "validation", "left to refund"],
+    ["more than is left to refund", "TN-1048", 60000, "validation", "left to refund"],
   ])("rejects a refund %s with a structured error", async (_case, orderId, amountMinor, category, message) => {
     const { assistant, requests } = setup(lookThenRefund(orderId, amountMinor));
 
@@ -151,7 +153,7 @@ describe("refunds", () => {
   });
 
   it("sends refunds above the limit to a human (refundPolicyHooks, combined with isolation hooks)", async () => {
-    const { assistant, requests } = setup(lookThenRefund("TN-1077", 9000));
+    const { assistant, requests } = setup(lookThenRefund("TN-1077", 250000));
 
     await assistant.reply(startSupportConversation(sam.id), "refund the lot");
 
@@ -182,10 +184,10 @@ describe("multi-turn context (task 5.1)", () => {
   it("carries verification and lookups into the next turn, with exact amounts in case facts", async () => {
     const { assistant, requests } = setup([
       turn(call("t1", "get_customer", {}), call("t2", "lookup_order", { orderId: "TN-1042" })),
-      say("I can refund £24.99 for the train. Shall I go ahead?"),
+      say("I can refund ₹1,499 for the train. Shall I go ahead?"),
       // Next customer turn: the refund is the very first call, allowed by the earlier turn's calls.
       turn(call("t3", "process_refund", refund())),
-      say("Done, £24.99 refunded."),
+      say("Done, ₹1,499 refunded."),
     ]);
 
     const first = await assistant.reply(startSupportConversation(sam.id), "My train arrived cracked (TN-1042)");
@@ -194,7 +196,7 @@ describe("multi-turn context (task 5.1)", () => {
     expect(second.conversation.caseFacts.refunds).toHaveLength(1);
     const secondTurnPrompt = requests[2]?.messages.at(-1)?.content;
     expect(secondTurnPrompt).toContain("<case_facts>");
-    expect(secondTurnPrompt).toContain("total £42.49");
+    expect(secondTurnPrompt).toContain("total ₹2,398");
   });
 
   it(`sends only the last ${RECENT_TURNS} turns verbatim, while case facts keep the details`, async () => {
@@ -213,6 +215,6 @@ describe("multi-turn context (task 5.1)", () => {
     const last = requests.at(-1)!;
     expect(last.messages).toHaveLength(RECENT_TURNS + 1);
     expect(JSON.stringify(last.messages)).not.toContain("message 1");
-    expect(last.messages.at(-1)?.content).toContain("total £42.49");
+    expect(last.messages.at(-1)?.content).toContain("total ₹2,398");
   });
 });

@@ -109,8 +109,8 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
 
       it("filters by an inclusive price range, with the filtered total", async () => {
         const { products } = await subject();
-        const inRange = catalog.products.filter((p) => p.priceMinor >= 599 && p.priceMinor <= 1299);
-        const { items, total } = await products.search({ minPriceMinor: 599, maxPriceMinor: 1299, limit: 100, offset: 0 });
+        const inRange = catalog.products.filter((p) => p.priceMinor >= 24900 && p.priceMinor <= 59900);
+        const { items, total } = await products.search({ minPriceMinor: 24900, maxPriceMinor: 59900, limit: 100, offset: 0 });
         expect(total).toBe(inRange.length);
         expect(items.map((p) => p.slug).sort()).toEqual(inRange.map((p) => p.slug).sort());
       });
@@ -134,7 +134,7 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
     });
 
     describe("orders (isolation layer 3: always scoped to one customer)", () => {
-      it("finds the customer's own order with its lines and money in pence", async () => {
+      it("finds the customer's own order with its lines and money in paise", async () => {
         const { orders: repo, customerIdFor } = await subject();
         const order = await repo.findForCustomer(await customerIdFor(customerA.email), orderOfA.id);
         expect(order).toMatchObject({

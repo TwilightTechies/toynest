@@ -8,7 +8,7 @@ const validProduct = {
   description: "Colourful wooden alphabet puzzle.",
   categoryId: "0e9d8c7b-6a5f-4e3d-9c2b-1a0f9e8d7c6b",
   priceMinor: 1499,
-  currency: "GBP",
+  currency: "INR",
   status: "active",
   attributes: { ageRange: "3-5 years", material: "Wood" },
   createdAt: "2026-10-01T00:00:00.000Z",
