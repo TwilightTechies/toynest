@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Nunito_Sans } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { themeBootScript } from "@/lib/theme";
 import "./globals.css";
 
 // Self-hosted at build time by next/font: no request to Google from the shopper's browser.
@@ -26,7 +27,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${fraunces.variable} ${nunitoSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The boot script may add data-theme before React hydrates; that difference is expected.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Applies a stored light/dark choice before first paint (no flash of the wrong theme). */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
         <a
           href="#main"

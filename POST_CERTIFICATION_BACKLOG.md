@@ -19,6 +19,7 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Placeholder product art per category
 - [ ] Real product photos (image field + Supabase Storage): with admin product CRUD
 - [x] Mobile header: menu button with disclosure panel
+- [x] Light / Dark / Auto theme switch (header on desktop, menu on phones and tablets)
 - [x] Mobile filters: collapsible panel instead of the full filter row
 - [x] Shared UI primitives (button, input, select, card, badge) used by storefront pages
 - [x] Layout check at phone (375 px), tablet (768 px) and desktop (1280 px) widths

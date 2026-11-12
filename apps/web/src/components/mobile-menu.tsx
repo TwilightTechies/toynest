@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 export interface NavLink {
   href: string;
   label: string;
 }
 
-// The only client JS in the header: a disclosure button for phones (aria-expanded + aria-controls).
+// Phones and tablets (below lg): a disclosure button (aria-expanded + aria-controls) holding the
+// links and the theme switch.
 // Without JS the menu stays closed; the footer and the home page's category tiles still link
 // everywhere the menu does.
 export function MobileMenu({ links }: { links: NavLink[] }) {
@@ -29,7 +31,7 @@ export function MobileMenu({ links }: { links: NavLink[] }) {
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         ref={buttonRef}
         type="button"
@@ -62,6 +64,10 @@ export function MobileMenu({ links }: { links: NavLink[] }) {
             </li>
           ))}
         </ul>
+        <div className="mt-3 flex items-center justify-between border-t border-border px-3 pt-4">
+          <span className="text-sm font-semibold text-muted">Theme</span>
+          <ThemeToggle showLabels />
+        </div>
       </nav>
     </div>
   );
