@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { LogoMark } from "@/components/logo";
 import { ProductGrid } from "@/components/product-card";
+import { ProductImage } from "@/components/product-image";
+import { buttonClass, cardClass, SectionHeading } from "@/components/ui";
 import { getHomeSections, UNDER_PRICE_MINOR, type CatalogItem } from "@/lib/catalog";
 
 // Learning-project pages built during the certification sprint, kept reachable from the home page.
@@ -29,35 +32,44 @@ const demos = [
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10">
-      <section className="rounded-2xl bg-amber-50 px-6 py-12 dark:bg-amber-950/40 sm:px-10">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Toys worth keeping.</h1>
-        <p className="mt-3 max-w-xl text-zinc-700 dark:text-zinc-300">
-          Wooden puzzles, personalised gifts and bright stationery for little hands.
-        </p>
-        <Link
-          href="/products"
-          className="mt-6 inline-block rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
-          Shop all toys
-        </Link>
+    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-10">
+      <section className="relative overflow-hidden rounded-3xl bg-surface px-6 py-12 sm:px-12 sm:py-16">
+        <div className="relative z-10 max-w-xl">
+          <p className="text-sm font-semibold uppercase tracking-wide text-sage-strong">Made to be played with</p>
+          <h1 className="mt-3 font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+            Toys worth keeping.
+          </h1>
+          <p className="mt-4 text-lg text-muted">
+            Wooden puzzles, personalised gifts and bright stationery for little hands.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/products" className={buttonClass("primary")}>
+              Shop all toys
+            </Link>
+            <Link href="/products?category=personalised-toys" className={buttonClass("secondary")}>
+              Personalised gifts
+            </Link>
+          </div>
+        </div>
+        {/* Decorative mark: large and faint on tablet and up, hidden on phones to keep the text clear. */}
+        <LogoMark className="pointer-events-none absolute -bottom-10 -right-10 hidden h-80 w-80 opacity-90 md:block" />
       </section>
 
-      <Suspense fallback={<p className="mt-10 text-sm text-zinc-500">Loading the shop…</p>}>
+      <Suspense fallback={<p className="mt-10 text-sm text-muted">Loading the shop…</p>}>
         <ShopSections />
       </Suspense>
 
-      <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Project demos</h2>
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+      <section id="demos" aria-labelledby="demos-heading" className="mt-20 border-t border-border pt-10">
+        <h2 id="demos-heading" className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Project demos
+        </h2>
+        <p className="mt-1 text-sm text-muted">Claude-powered pages built during the certification sprint.</p>
+        <ul className="mt-5 grid gap-4 sm:grid-cols-2">
           {demos.map((demo) => (
             <li key={demo.href}>
-              <Link
-                href={demo.href}
-                className="block h-full rounded-lg border border-zinc-200 p-5 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
-              >
-                <h3 className="font-medium">{demo.title}</h3>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{demo.body}</p>
+              <Link href={demo.href} className={`block h-full p-5 hover:border-accent ${cardClass}`}>
+                <h3 className="font-semibold">{demo.title}</h3>
+                <p className="mt-1 text-sm text-muted">{demo.body}</p>
               </Link>
             </li>
           ))}
@@ -73,17 +85,20 @@ async function ShopSections() {
 
   return (
     <>
-      <section className="mt-12">
-        <h2 className="text-xl font-semibold tracking-tight">Shop by category</h2>
-        <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section aria-labelledby="categories-heading" className="mt-14">
+        <SectionHeading id="categories-heading">Shop by category</SectionHeading>
+        <ul className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {categories.map((category) => (
             <li key={category.slug}>
               <Link
                 href={`/products?category=${category.slug}`}
-                className="block rounded-lg border border-zinc-200 p-5 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                className={`group block p-3 transition-shadow hover:shadow-md ${cardClass}`}
               >
-                <span className="font-medium">{category.name}</span>
-                <span className="mt-1 block text-sm text-zinc-500">
+                <ProductImage categorySlug={category.slug} />
+                <span className="mt-3 block px-1 font-display text-lg font-semibold group-hover:text-accent">
+                  {category.name}
+                </span>
+                <span className="block px-1 pb-1 text-sm text-muted">
                   {category.count} product{category.count === 1 ? "" : "s"}
                 </span>
               </Link>
@@ -92,24 +107,24 @@ async function ShopSections() {
         </ul>
       </section>
 
-      <Shelf title="New arrivals" href="/products?sort=newest" items={newArrivals} />
-      <Shelf title={underLabel} href={`/products?max=${UNDER_PRICE_MINOR / 100}&sort=price-asc`} items={underTen} />
+      <Shelf id="new-arrivals" title="New arrivals" href="/products?sort=newest" items={newArrivals} />
+      <Shelf id="under-ten" title={underLabel} href={`/products?max=${UNDER_PRICE_MINOR / 100}&sort=price-asc`} items={underTen} />
     </>
   );
 }
 
-function Shelf({ title, href, items }: { title: string; href: string; items: CatalogItem[] }) {
+function Shelf({ id, title, href, items }: { id: string; title: string; href: string; items: CatalogItem[] }) {
   if (items.length === 0) return null;
   return (
-    <section className="mt-12">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        <Link href={href} className="text-sm text-zinc-600 hover:underline dark:text-zinc-400">
-          See all
+    <section aria-labelledby={id} className="mt-14">
+      <div className="flex items-baseline justify-between gap-4">
+        <SectionHeading id={id}>{title}</SectionHeading>
+        <Link href={href} className="text-sm font-semibold text-accent hover:underline">
+          See all →
         </Link>
       </div>
-      <div className="mt-4">
-        <ProductGrid items={items} />
+      <div className="mt-5">
+        <ProductGrid items={items} layout="shelf" />
       </div>
     </section>
   );

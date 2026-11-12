@@ -6,23 +6,26 @@ Deferred by ADR-001. Pick up after 7 Nov 2026.
 One phase per project session, each on its own `feat/` branch:
 
 1. ~~Storefront browsing~~ (done, ADR-012)
-2. **Design foundation** (next): set the look once, so cart and checkout inherit it
-3. Cart
+2. ~~Design foundation~~ (done, ADR-013)
+3. **Cart** (next)
 4. Checkout
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
 
 ## Design foundation (responsive web; no native app)
-- [ ] Optional first step: Figma mock-ups of home and product pages, desktop + phone, approved before code
-- [ ] Brand tokens: colours, typography, spacing, radius as Tailwind theme variables (light + dark)
-- [ ] Logo/wordmark and favicon
-- [ ] Product imagery: placeholder images per product, with an image field ready for real photos
-- [ ] Mobile header: menu button and slide-out navigation
-- [ ] Mobile filters: collapsible panel instead of the full filter row
-- [ ] Shared UI primitives (button, input, select, card, badge) used by existing pages
-- [ ] Layout check at phone (375 px), tablet (768 px) and desktop (1280 px) widths
+- [x] ~~Figma mock-ups~~ (skipped: built code-first and reviewed at real widths)
+- [x] Brand tokens: colours and typography as Tailwind theme variables (light + dark), contrast-checked
+- [x] Logo/wordmark and favicon
+- [x] Placeholder product art per category
+- [ ] Real product photos (image field + Supabase Storage): with admin product CRUD
+- [x] Mobile header: menu button with disclosure panel
+- [x] Light / Dark / Auto theme switch (header on desktop, menu on phones and tablets)
+- [x] Mobile filters: collapsible panel instead of the full filter row
+- [x] Shared UI primitives (button, input, select, card, badge) used by storefront pages
+- [x] Layout check at phone (375 px), tablet (768 px) and desktop (1280 px) widths
 
 ## Design polish (after checkout)
+- [ ] Move support and admin pages from raw `zinc` classes to tokens
 - [ ] Empty, loading and error states styled consistently
 - [ ] Accessibility pass: contrast, focus styles, keyboard navigation
 - [ ] Final responsive review of cart, checkout and account pages

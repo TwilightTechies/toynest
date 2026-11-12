@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { formatPounds, parseCatalogParams, type CatalogParams, type ProductSort } from "@toynest/core";
+import { FilterPanel } from "@/components/filter-panel";
 import { Pagination } from "@/components/pagination";
 import { ProductGrid } from "@/components/product-card";
+import { Badge, buttonClass, fieldClass, labelClass } from "@/components/ui";
 import { listCatalog, type CatalogPage } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Shop · ToyNest" };
@@ -18,12 +20,11 @@ const sortOptions: { value: ProductSort; label: string }[] = [
   { value: "name", label: "Name A–Z" },
 ];
 
-const fieldClass = "rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700";
 
 export default function ProductsPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10">
-      <Suspense fallback={<p className="text-sm text-zinc-500">Loading products…</p>}>
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
+      <Suspense fallback={<p className="text-sm text-muted">Loading products…</p>}>
         <Results searchParams={searchParams} />
       </Suspense>
     </main>
@@ -37,26 +38,28 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">{page.category?.name ?? "All products"}</h1>
-      <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+        {page.category?.name ?? "All products"}
+      </h1>
+      <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
         <span>{summary(page)}</span>
-        <span
-          className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-          title={page.source === "supabase" ? "Read from the Supabase database" : "Read from data/*.json (Supabase not configured)"}
-        >
-          Data: {page.source === "supabase" ? "Supabase" : "Sample file"}
+        <span title={page.source === "supabase" ? "Read from the Supabase database" : "Read from data/*.json (Supabase not configured)"}>
+          <Badge tone="neutral">Data: {page.source === "supabase" ? "Supabase" : "Sample file"}</Badge>
         </span>
       </p>
 
-      <Filters params={params} page={page} />
+      <FilterPanel activeCount={activeFilterCount(params)}>
+        <Filters params={params} page={page} />
+      </FilterPanel>
 
       {page.items.length === 0 ? (
-        <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
-          No products match these filters.{" "}
-          <Link href="/products" className="underline">
+        <div className="mt-8 rounded-2xl bg-surface px-6 py-12 text-center">
+          <p className="font-display text-xl font-semibold">No products match these filters</p>
+          <p className="mt-2 text-sm text-muted">Try a wider price range or another category.</p>
+          <Link href="/products" className={`mt-5 ${buttonClass("secondary", "sm")}`}>
             Clear filters
           </Link>
-        </p>
+        </div>
       ) : (
         <div className="mt-8">
           <ProductGrid items={page.items} />
@@ -66,6 +69,12 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
       <Pagination params={params} pageCount={page.pageCount} />
     </>
   );
+}
+
+function activeFilterCount(params: CatalogParams): number {
+  return [params.text, params.categorySlug, params.minPriceMinor, params.maxPriceMinor].filter(
+    (value) => value !== undefined && value !== "",
+  ).length + (params.sort === "relevance" ? 0 : 1);
 }
 
 function summary({ total, params, pageCount }: CatalogPage): string {
@@ -79,8 +88,12 @@ function summary({ total, params, pageCount }: CatalogPage): string {
 // It has no page field, so changing a filter starts again at page 1.
 function Filters({ params, page }: { params: CatalogParams; page: CatalogPage }) {
   return (
-    <form role="search" action="/products" className="mt-6 flex flex-wrap items-end gap-3">
-      <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+    <form
+      role="search"
+      action="/products"
+      className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-surface-raised p-4 md:grid-cols-[minmax(12rem,1fr)_auto_6rem_6rem_auto_auto] md:items-end"
+    >
+      <label className={`col-span-2 md:col-span-1 ${labelClass}`}>
         Search
         <input
           name="q"
@@ -91,7 +104,7 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
           className={fieldClass}
         />
       </label>
-      <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+      <label className={`col-span-2 md:col-span-1 ${labelClass}`}>
         Category
         <select name="category" defaultValue={page.category?.slug ?? ""} className={fieldClass}>
           <option value="">All categories</option>
@@ -102,7 +115,7 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
           ))}
         </select>
       </label>
-      <label className="flex w-24 flex-col gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+      <label className={labelClass}>
         Min £
         <input
           name="min"
@@ -112,7 +125,7 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
           className={fieldClass}
         />
       </label>
-      <label className="flex w-24 flex-col gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+      <label className={labelClass}>
         Max £
         <input
           name="max"
@@ -122,7 +135,7 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
           className={fieldClass}
         />
       </label>
-      <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+      <label className={`col-span-2 md:col-span-1 ${labelClass}`}>
         Sort
         <select name="sort" defaultValue={params.sort} className={fieldClass}>
           {sortOptions.map((option) => (
@@ -132,10 +145,7 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
           ))}
         </select>
       </label>
-      <button
-        type="submit"
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-      >
+      <button type="submit" className={`col-span-2 md:col-span-1 ${buttonClass("primary")}`}>
         Apply
       </button>
     </form>
