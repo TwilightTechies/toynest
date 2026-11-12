@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { ProductImage } from "@/components/product-image";
+import { Badge, buttonClass } from "@/components/ui";
 import { getProduct } from "@/lib/catalog";
 
 type Params = Promise<{ slug: string }>;
@@ -13,8 +15,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default function ProductPage({ params }: { params: Params }) {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10">
-      <Suspense fallback={<p className="text-sm text-zinc-500">Loading product…</p>}>
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
+      <Suspense fallback={<p className="text-sm text-muted">Loading product…</p>}>
         <Product params={params} />
       </Suspense>
     </main>
@@ -28,40 +30,59 @@ async function Product({ params }: { params: Params }) {
 
   return (
     <article>
-      <nav aria-label="Breadcrumb" className="text-sm text-zinc-500">
-        <Link href="/products" className="hover:underline">
-          Shop
-        </Link>
-        {product.categorySlug && (
-          <>
-            {" / "}
-            <Link href={`/products?category=${product.categorySlug}`} className="hover:underline">
-              {product.categoryName}
+      <nav aria-label="Breadcrumb" className="text-sm text-muted">
+        <ol className="flex flex-wrap items-center gap-1.5">
+          <li>
+            <Link href="/products" className="hover:text-accent hover:underline">
+              Shop
             </Link>
-          </>
-        )}
+          </li>
+          {product.categorySlug && (
+            <li className="flex items-center gap-1.5">
+              <span aria-hidden="true">/</span>
+              <Link href={`/products?category=${product.categorySlug}`} className="hover:text-accent hover:underline">
+                {product.categoryName}
+              </Link>
+            </li>
+          )}
+        </ol>
       </nav>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">{product.name}</h1>
-      <p className="mt-3 text-2xl font-semibold tabular-nums">{product.price}</p>
-      <p className="mt-6 text-zinc-700 dark:text-zinc-300">{product.description}</p>
 
-      {product.attributes.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Details</h2>
-          <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
-            {product.attributes.map((attribute) => (
-              <div key={attribute.label} className="contents">
-                <dt className="text-zinc-500">{attribute.label}</dt>
-                <dd>{attribute.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
+      {/* Phones: image, then details. Tablet and up: side by side. */}
+      <div className="mt-5 grid gap-8 md:grid-cols-2 md:gap-12">
+        <div className="self-start rounded-2xl border border-border bg-surface-raised p-3">
+          <ProductImage categorySlug={product.categorySlug} size="hero" />
+        </div>
 
-      <p className="mt-10 rounded-md bg-zinc-100 px-4 py-3 text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-        The basket arrives in the next phase.
-      </p>
+        <div>
+          <Badge>{product.categoryName}</Badge>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">{product.name}</h1>
+          <p className="mt-3 text-2xl font-bold tabular-nums">{product.price}</p>
+          <p className="mt-5 leading-relaxed text-foreground/90">{product.description}</p>
+
+          {/* Placeholder for the cart phase: disabled, and says why, rather than a button that does nothing. */}
+          <button type="button" disabled className={`mt-6 w-full sm:w-auto ${buttonClass("primary")}`}>
+            Add to basket
+          </button>
+          <p className="mt-2 text-sm text-muted">The basket arrives in the next phase.</p>
+
+          {product.attributes.length > 0 && (
+            <section aria-labelledby="details-heading" className="mt-8 border-t border-border pt-6">
+              <h2 id="details-heading" className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Details
+              </h2>
+              <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-8 gap-y-2.5 text-sm">
+                {product.attributes.map((attribute) => (
+                  <div key={attribute.label} className="contents">
+                    <dt className="text-muted">{attribute.label}</dt>
+                    <dd className="font-semibold">{attribute.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+        </div>
+      </div>
     </article>
   );
 }

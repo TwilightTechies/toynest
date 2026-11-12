@@ -109,3 +109,17 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - Sample products get an `addedOn` date, which the in-memory adapter and the seed share, so "newest" means the same in both.
 - **Alternatives:** Client-side filtering with React state (no shareable URLs, and it ships the whole catalogue); a `/categories/[slug]` route (duplicates the listing); an overloaded SQL function (ambiguous RPC); a `featured` column for the home page (deferred: needs admin editing to be meaningful).
 - **Consequences:** Deferred: featured products, best sellers (needs an order aggregate), variants, personalisation. Category counts cost one count query per category (4 today). The header's category links are static and must change if categories become admin-editable. Old callers of the 4-argument function keep working, because the new parameters have defaults and the extra result columns are ignored by the old row schema.
+
+## ADR-013 · Design foundation: semantic tokens, warm natural palette, mobile-first
+- **Date:** 12 Nov 2026 · **Status:** Accepted
+- **Context:** The storefront used Tailwind's default greys with no brand, and nothing was designed for phones. Cart and checkout come next, so the look should be set once now and inherited, not retrofitted page by page. The site is responsive web; no native app is planned.
+- **Decision:**
+  - **Warm natural** brand: cream background, deep terracotta accent, sage secondary. Fraunces for headings, Nunito Sans for body text, both self-hosted by `next/font`.
+  - **Semantic tokens** in `globals.css` (`background`, `surface`, `muted`, `accent`, `sage-*`…), redefined for dark mode. Components never use raw palettes, so a palette change touches one file.
+  - **Contrast is checked per token pair** (WCAG AA 4.5:1). The preview terracotta `#C2562F` reaches only 4.2:1 as text on cream, so links and buttons use `#A8461F` (5.5:1) and `#C2562F` is decorative only.
+  - Primitives in `components/ui.tsx` are mostly class-string helpers (`buttonClass`, `fieldClass`…), because the same style lands on a `Link`, a `<button>` or a form button.
+  - **Mobile-first:** two-column product grid on phones, a menu button with a disclosure panel, and filters collapsed behind a "Filters & sort" toggle. These are the only two client components; browsing stays URL- and server-driven (ADR-012).
+  - **Placeholder product art** per category, drawn as inline SVG. There's no image column yet: real photos come with admin product editing and Supabase Storage.
+  - A path-scoped rule (`.claude/rules/web-ui.md`) records these conventions, so later sessions apply them when they edit web UI files.
+- **Alternatives:** Figma mock-ups first (an extra round-trip; tokens make code changes cheap); a component library such as shadcn/ui (more dependencies than eight pages need); a slide-out drawer with a focus trap (more JS than a short list of links needs).
+- **Consequences:** Support and admin pages inherit the colours and fonts but still use raw `zinc` classes. They move to tokens in the design polish phase. Without JS, phone users can't open the menu or filter panel, but every destination is still reachable from the footer and home page. Visual checks were done with headless Chrome at 375, 768 and 1280 px in light and dark.

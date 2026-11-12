@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
+/*
+ * ToyNest design tokens ("warm natural", ADR-013).
+ * Components use the semantic names (bg-surface, text-muted, bg-accent…), never raw colours,
+ * so a palette change happens here only. Contrast (WCAG AA, 4.5:1 for body text) checked per pair:
+ *   foreground/background 14.3 · muted/background 5.9 · muted/surface 5.3
+ *   accent (links) /background 5.5 · accent-foreground/accent (buttons) 5.9 · sage-strong/sage-soft 4.9
+ *   dark: foreground 14.9 · muted 7.4 · accent 6.8 · accent-foreground/accent 6.8
+ * --color-terracotta (#C2562F) is decorative only: 4.2:1 on cream is too low for text.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbf7f0; /* cream */
+  --foreground: #2b2420; /* warm charcoal */
+  --surface: #f3eadb; /* sand: cards, hero, image tiles */
+  --surface-raised: #ffffff;
+  --muted: #6b5e54;
+  --border: #e4d8c6;
+  --border-strong: #c9b8a2;
+  --accent: #a8461f; /* deep terracotta: links, primary buttons */
+  --accent-hover: #8f3a18;
+  --accent-foreground: #ffffff;
+  --sage-soft: #e3ebdf;
+  --sage-strong: #4f6b47;
+  --focus: #a8461f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1c1714;
+    --foreground: #f3eadb;
+    --surface: #26201b;
+    --surface-raised: #2e2620;
+    --muted: #b3a596;
+    --border: #3a3029;
+    --border-strong: #5a4b40;
+    --accent: #e8865e;
+    --accent-hover: #f09a75;
+    --accent-foreground: #1c1714;
+    --sage-soft: #26302a;
+    --sage-strong: #a9c29f;
+    --focus: #e8865e;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-sage-soft: var(--sage-soft);
+  --color-sage-strong: var(--sage-strong);
+  --color-focus: var(--focus);
+  --color-terracotta: #c2562f;
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-fraunces);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* One visible focus style for every interactive element (keyboard users). */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

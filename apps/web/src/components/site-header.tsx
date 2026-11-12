@@ -1,38 +1,34 @@
 import Link from "next/link";
+import { Logo } from "./logo";
+import { MobileMenu, type NavLink } from "./mobile-menu";
 
 // Category links are fixed here rather than loaded, so the header stays static (no data fetch on
 // every page). If categories become admin-editable, load them from CategoryRepository instead.
-const navCategories = [
-  { slug: "educational-toys", name: "Educational" },
-  { slug: "personalised-toys", name: "Personalised" },
-  { slug: "small-toys", name: "Small toys" },
-  { slug: "stationery", name: "Stationery" },
+const navLinks: NavLink[] = [
+  { href: "/products", label: "Shop all" },
+  { href: "/products?category=educational-toys", label: "Educational" },
+  { href: "/products?category=personalised-toys", label: "Personalised" },
+  { href: "/products?category=small-toys", label: "Small toys" },
+  { href: "/products?category=stationery", label: "Stationery" },
 ];
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          ToyNest
-        </Link>
-        <nav aria-label="Main" className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-          <Link href="/products" className="hover:text-zinc-900 dark:hover:text-zinc-100">
-            Shop all
-          </Link>
-          {navCategories.map((category) => (
-            <Link
-              key={category.slug}
-              href={`/products?category=${category.slug}`}
-              className="hover:text-zinc-900 dark:hover:text-zinc-100"
-            >
-              {category.name}
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-6 px-4">
+        <Logo />
+        {/* Desktop: inline links. Phones: the menu button below (md:hidden). */}
+        <nav aria-label="Main" className="hidden items-center gap-1 text-sm font-semibold md:flex">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="rounded-full px-3 py-2 hover:bg-surface hover:text-accent">
+              {link.label}
             </Link>
           ))}
-          <Link href="/support" className="hover:text-zinc-900 dark:hover:text-zinc-100">
-            Support
+          <Link href="/support" className="ml-2 rounded-full px-3 py-2 text-muted hover:bg-surface hover:text-accent">
+            Help
           </Link>
         </nav>
+        <MobileMenu links={[...navLinks, { href: "/support", label: "Help & support" }]} />
       </div>
     </header>
   );
