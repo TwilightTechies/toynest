@@ -9,10 +9,10 @@
     {
       "id": "TN-1042", "customerId": "cus_1001", "status": "delivered",
       "placedAt": "2026-10-29T09:12:00Z", "deliveredAt": "2026-11-02T14:05:00Z",
-      "totalMinor": 4249, "refundedMinor": 0, "currency": "GBP",
+      "totalMinor": 239800, "refundedMinor": 0, "currency": "INR",
       "items": [
-        { "productSlug": "personalised-name-train", "name": "Personalised Name Train", "quantity": 1, "unitPriceMinor": 2499 },
-        { "productSlug": "magnetic-letter-board", "name": "Magnetic Letter Board", "quantity": 1, "unitPriceMinor": 1750 }
+        { "productSlug": "personalised-name-train", "name": "Personalised Name Train", "quantity": 1, "unitPriceMinor": 149900 },
+        { "productSlug": "magnetic-letter-board", "name": "Magnetic Letter Board", "quantity": 1, "unitPriceMinor": 89900 }
       ],
       "warehouseCode": "WH-MAN-02", "pickerId": "pk_7731", "packagingSku": "BOX-M-ECO",
       "carrierEvents": [
@@ -25,8 +25,8 @@
     {
       "id": "TN-1051", "customerId": "cus_1001", "status": "dispatched",
       "placedAt": "2026-11-03T18:30:00Z", "deliveredAt": null,
-      "totalMinor": 1797, "refundedMinor": 0, "currency": "GBP",
-      "items": [{ "productSlug": "wind-up-robot", "name": "Wind-up Robot", "quantity": 3, "unitPriceMinor": 599 }],
+      "totalMinor": 89700, "refundedMinor": 0, "currency": "INR",
+      "items": [{ "productSlug": "wind-up-robot", "name": "Wind-up Robot", "quantity": 3, "unitPriceMinor": 29900 }],
       "warehouseCode": "WH-MAN-01", "pickerId": "pk_1204", "packagingSku": "BOX-S-ECO",
       "carrierEvents": [{ "at": "2026-11-04T08:15:00Z", "code": "COLLECTED", "depot": "Manchester" }],
       "auditLog": ["2026-11-03 order created", "2026-11-03 payment captured"]
@@ -34,8 +34,8 @@
     {
       "id": "TN-1048", "customerId": "cus_1001", "status": "delivered",
       "placedAt": "2026-10-24T11:00:00Z", "deliveredAt": "2026-10-28T10:20:00Z",
-      "totalMinor": 1299, "refundedMinor": 0, "currency": "GBP",
-      "items": [{ "productSlug": "wooden-number-puzzle", "name": "Wooden Number Puzzle", "quantity": 1, "unitPriceMinor": 1299 }],
+      "totalMinor": 59900, "refundedMinor": 0, "currency": "INR",
+      "items": [{ "productSlug": "wooden-number-puzzle", "name": "Wooden Number Puzzle", "quantity": 1, "unitPriceMinor": 59900 }],
       "warehouseCode": "WH-MAN-02", "pickerId": "pk_7731", "packagingSku": "BOX-S-ECO",
       "carrierEvents": [{ "at": "2026-10-28T10:20:00Z", "code": "DELIVERED", "depot": "Leeds" }],
       "auditLog": ["2026-10-24 order created"]
@@ -43,10 +43,10 @@
     {
       "id": "TN-1036", "customerId": "cus_1001", "status": "delivered",
       "placedAt": "2026-10-15T16:45:00Z", "deliveredAt": "2026-10-20T12:00:00Z",
-      "totalMinor": 2198, "refundedMinor": 899, "currency": "GBP",
+      "totalMinor": 94800, "refundedMinor": 34900, "currency": "INR",
       "items": [
-        { "productSlug": "wooden-number-puzzle", "name": "Wooden Number Puzzle", "quantity": 1, "unitPriceMinor": 1299 },
-        { "productSlug": "alphabet-flash-cards", "name": "Alphabet Flash Cards", "quantity": 1, "unitPriceMinor": 899 }
+        { "productSlug": "wooden-number-puzzle", "name": "Wooden Number Puzzle", "quantity": 1, "unitPriceMinor": 59900 },
+        { "productSlug": "alphabet-flash-cards", "name": "Alphabet Flash Cards", "quantity": 1, "unitPriceMinor": 34900 }
       ],
       "warehouseCode": "WH-MAN-01", "pickerId": "pk_1204", "packagingSku": "BOX-M-ECO",
       "carrierEvents": [{ "at": "2026-10-20T12:00:00Z", "code": "DELIVERED", "depot": "Leeds" }],
@@ -55,10 +55,10 @@
     {
       "id": "TN-1063", "customerId": "cus_1002", "status": "delivered",
       "placedAt": "2026-10-27T08:05:00Z", "deliveredAt": "2026-11-01T15:30:00Z",
-      "totalMinor": 6748, "refundedMinor": 0, "currency": "GBP",
+      "totalMinor": 389700, "refundedMinor": 0, "currency": "INR",
       "items": [
-        { "productSlug": "personalised-name-train", "name": "Personalised Name Train", "quantity": 2, "unitPriceMinor": 2499 },
-        { "productSlug": "magnetic-letter-board", "name": "Magnetic Letter Board", "quantity": 1, "unitPriceMinor": 1750 }
+        { "productSlug": "personalised-name-train", "name": "Personalised Name Train", "quantity": 2, "unitPriceMinor": 149900 },
+        { "productSlug": "magnetic-letter-board", "name": "Magnetic Letter Board", "quantity": 1, "unitPriceMinor": 89900 }
       ],
       "warehouseCode": "WH-BRI-01", "pickerId": "pk_5520", "packagingSku": "BOX-L-ECO",
       "carrierEvents": [{ "at": "2026-11-01T15:30:00Z", "code": "DELIVERED", "depot": "Bristol" }],
@@ -67,8 +67,8 @@
     {
       "id": "TN-1029", "customerId": "cus_1002", "status": "delivered",
       "placedAt": "2026-09-14T10:00:00Z", "deliveredAt": "2026-09-20T13:10:00Z",
-      "totalMinor": 1400, "refundedMinor": 0, "currency": "GBP",
-      "items": [{ "productSlug": "shape-sorter-cube", "name": "Shape Sorter Cube", "quantity": 1, "unitPriceMinor": 1400 }],
+      "totalMinor": 69900, "refundedMinor": 0, "currency": "INR",
+      "items": [{ "productSlug": "shape-sorter-cube", "name": "Shape Sorter Cube", "quantity": 1, "unitPriceMinor": 69900 }],
       "warehouseCode": "WH-BRI-01", "pickerId": "pk_5520", "packagingSku": "BOX-S-ECO",
       "carrierEvents": [{ "at": "2026-09-20T13:10:00Z", "code": "DELIVERED", "depot": "Bristol" }],
       "auditLog": ["2026-09-14 order created"]
@@ -76,8 +76,8 @@
     {
       "id": "TN-1070", "customerId": "cus_1003", "status": "delivered",
       "placedAt": "2026-10-31T19:20:00Z", "deliveredAt": "2026-11-04T11:45:00Z",
-      "totalMinor": 699, "refundedMinor": 0, "currency": "GBP",
-      "items": [{ "productSlug": "animal-sticker-book", "name": "Animal Sticker Book", "quantity": 1, "unitPriceMinor": 699 }],
+      "totalMinor": 24900, "refundedMinor": 0, "currency": "INR",
+      "items": [{ "productSlug": "animal-sticker-book", "name": "Animal Sticker Book", "quantity": 1, "unitPriceMinor": 24900 }],
       "warehouseCode": "WH-MAN-01", "pickerId": "pk_1204", "packagingSku": "ENV-A4",
       "carrierEvents": [{ "at": "2026-11-04T11:45:00Z", "code": "DELIVERED", "depot": "Leeds" }],
       "auditLog": ["2026-10-31 order created"],
@@ -86,8 +86,8 @@
     {
       "id": "TN-1071", "customerId": "cus_1003", "status": "placed",
       "placedAt": "2026-11-05T21:00:00Z", "deliveredAt": null,
-      "totalMinor": 900, "refundedMinor": 0, "currency": "GBP",
-      "items": [{ "productSlug": "rainbow-crayons", "name": "Rainbow Crayons (12)", "quantity": 2, "unitPriceMinor": 450 }],
+      "totalMinor": 29800, "refundedMinor": 0, "currency": "INR",
+      "items": [{ "productSlug": "rainbow-crayons", "name": "Rainbow Crayons (12)", "quantity": 2, "unitPriceMinor": 14900 }],
       "warehouseCode": "WH-MAN-01", "pickerId": null, "packagingSku": "ENV-A5",
       "carrierEvents": [],
       "auditLog": ["2026-11-05 order created"]

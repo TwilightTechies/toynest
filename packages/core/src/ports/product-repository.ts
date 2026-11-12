@@ -3,7 +3,7 @@ import type { Product, ProductSort } from "../domain/product";
 export interface ProductSearchQuery {
   text?: string;
   categoryId?: string;
-  // Inclusive bounds in minor units (pence).
+  // Inclusive bounds in minor units (paise).
   minPriceMinor?: number;
   maxPriceMinor?: number;
   // Defaults to "relevance". Every sort breaks ties by name, so pages are stable.

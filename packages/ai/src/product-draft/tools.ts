@@ -14,7 +14,7 @@ export function searchProductsTool({ products, categories }: CatalogDeps): Tool 
     description:
       "Search ToyNest's existing catalogue by keywords such as product type, material or theme. " +
       "Use it to find similar products and typical prices. Returns up to `limit` matches with slug, name, " +
-      "categorySlug and priceMinor (price in minor units, e.g. pence). An empty list means no matches, not an error.",
+      "categorySlug and priceMinor (price in minor units: paise, ₹1 = 100 paise). An empty list means no matches, not an error.",
     input: z.object({
       query: z.string().min(2).max(100),
       limit: z.number().int().min(1).max(10).default(5),

@@ -14,7 +14,7 @@ const outcomeStyle: Record<ToolActivity["outcome"], string> = {
 const tryThese = [
   "My name train from order TN-1042 arrived cracked. Can I get a refund for it?",
   "I want a refund for my puzzle order.",
-  "Another shop sells the robot £2 cheaper, can you match it?",
+  "Another shop sells the robot ₹50 cheaper, can you match it?",
   "Where is order TN-1070?",
   "I'd like to speak to a real person, please.",
 ];

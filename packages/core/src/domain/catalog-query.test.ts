@@ -13,15 +13,15 @@ describe("parseCatalogParams", () => {
     });
   });
 
-  it("converts pounds to pence and keeps valid values", () => {
+  it("converts rupees to paise and keeps valid values", () => {
     expect(
-      parseCatalogParams({ q: " wood ", category: "stationery", sort: "price-asc", min: "4.5", max: "10", page: "2" }),
+      parseCatalogParams({ q: " wood ", category: "stationery", sort: "price-asc", min: "249.5", max: "500", page: "2" }),
     ).toEqual({
       text: "wood",
       categorySlug: "stationery",
       sort: "price-asc",
-      minPriceMinor: 450,
-      maxPriceMinor: 1000,
+      minPriceMinor: 24950,
+      maxPriceMinor: 50000,
       page: 2,
     });
   });
@@ -45,15 +45,15 @@ describe("parseCatalogParams", () => {
     });
   });
 
-  it("rejects prices with more than two decimals or above the cap", () => {
-    expect(parseCatalogParams({ min: "9.999", max: "99999" })).toMatchObject({
+  it("rejects prices with more than two decimals or above the ₹10,00,000 cap", () => {
+    expect(parseCatalogParams({ min: "9.999", max: "2000000" })).toMatchObject({
       minPriceMinor: undefined,
       maxPriceMinor: undefined,
     });
   });
 
   it("swaps inverted price bounds", () => {
-    expect(parseCatalogParams({ min: "20", max: "5" })).toMatchObject({ minPriceMinor: 500, maxPriceMinor: 2000 });
+    expect(parseCatalogParams({ min: "2000", max: "500" })).toMatchObject({ minPriceMinor: 50000, maxPriceMinor: 200000 });
   });
 
   it("takes the first value of a repeated key", () => {
@@ -66,9 +66,9 @@ describe("parseCatalogParams", () => {
 
 describe("catalogSearchString", () => {
   it("omits defaults and round-trips through the parser", () => {
-    const params = parseCatalogParams({ category: "stationery", sort: "newest", min: "4.50", page: "2" });
+    const params = parseCatalogParams({ category: "stationery", sort: "newest", min: "249.50", page: "2" });
     const text = catalogSearchString(params);
-    expect(text).toBe("?category=stationery&sort=newest&min=4.50&page=2");
+    expect(text).toBe("?category=stationery&sort=newest&min=249.50&page=2");
     expect(parseCatalogParams(Object.fromEntries(new URLSearchParams(text)))).toEqual(params);
   });
 

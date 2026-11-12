@@ -24,7 +24,7 @@
         { "field": "learningFocus", "note": "Required for educational toys; the brief does not say what skill it teaches" },
         { "field": "safetyCertification", "note": "No safety marking (e.g. UKCA/CE) given; confirm before publishing" },
         { "field": "pieceCount", "note": "Number of pieces not stated" },
-        { "field": "price", "note": "Not in the brief; similar puzzles sell for £12.99-£17.50" }
+        { "field": "price", "note": "Not in the brief; similar puzzles sell for ₹599-₹899" }
       ]
     }
   }

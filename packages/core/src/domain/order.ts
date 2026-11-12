@@ -10,7 +10,7 @@ export const OrderItemSchema = z.object({
   unitPriceMinor: z.number().int().nonnegative(),
 });
 
-// Money in minor units (pence). refundedMinor is the total already refunded on this order.
+// Money in minor units (paise). refundedMinor is the total already refunded on this order.
 export const OrderSchema = z.object({
   id: z.string().regex(/^TN-\d{4}$/, "Order ids look like TN-1042"),
   customerId: z.string().min(1),

@@ -23,7 +23,7 @@ const productList: Product[] = [
     description: "Numbers 0-9 in chunky wood.",
     categoryId: "5b0c6a0e-0f4e-4d2a-9a51-1c3d5e7f9a01",
     priceMinor: 1299,
-    currency: "GBP",
+    currency: "INR",
     status: "active",
     attributes: { ageRange: "3-5 years", material: "Wood" },
     createdAt: "2026-10-01T00:00:00.000Z",

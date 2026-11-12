@@ -7,7 +7,8 @@ One phase per project session, each on its own `feat/` branch:
 
 1. ~~Storefront browsing~~ (done, ADR-012)
 2. ~~Design foundation~~ (done, ADR-013)
-3. **Cart** (next)
+2a. ~~India localisation: INR, en-IN formatting~~ (done, ADR-014)
+3. **Cart** (next): includes delivery charges by pincode zone, set in the database
 4. Checkout
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
@@ -36,7 +37,7 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Product detail page, category browsing, price filter, sorting, pagination (ADR-012)
 - [ ] Product variants (colour/size) selection UI
 - [ ] Customised products: personalised text, colour, instructions, image upload (Supabase Storage)
-- [ ] Cart: add/remove, quantities, customisation details, subtotal/discount/shipping/total
+- [ ] Cart: add/remove, quantities, personalisation (name text), subtotal and delivery by pincode zone (shipping_zones table), total
 - [ ] Checkout: customer details, shipping address, order summary
 - [ ] MockPaymentProvider: success / failure / pending
 - [ ] Customer account: registration, password recovery, profile, order history UI

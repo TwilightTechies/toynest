@@ -51,7 +51,7 @@ describe("ToyNest MCP server", () => {
 
     expect(isError).toBe(false);
     expect(body).toMatchObject({
-      items: [expect.objectContaining({ slug: "wooden-number-puzzle", categorySlug: "educational-toys", priceMinor: 1299 })],
+      items: [expect.objectContaining({ slug: "wooden-number-puzzle", categorySlug: "educational-toys", priceMinor: 59900 })],
     });
   });
 

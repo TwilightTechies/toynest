@@ -8,7 +8,7 @@ const productRow = {
   description: "Wooden Number Puzzle. Ages 3-5 years. Material: Wood.",
   category_id: "0e9d8c7b-6a5f-4e3d-9c2b-1a0f9e8d7c6b",
   price_minor: 1299,
-  currency: "GBP",
+  currency: "INR",
   status: "active",
   attributes: { ageRange: "3-5 years", material: "Wood" },
   created_at: "2026-08-04T00:00:00+00:00",
@@ -22,7 +22,7 @@ const orderRow = {
   delivered_at: "2026-11-02T14:05:00+00:00",
   total_minor: 4249,
   refunded_minor: 0,
-  currency: "GBP",
+  currency: "INR",
   order_items: [
     { product_slug: "magnetic-letter-board", product_name: "Magnetic Letter Board", quantity: 1, unit_price_minor: 1750, created_at: "2026-10-29T09:12:02+00:00" },
     { product_slug: "personalised-name-train", product_name: "Personalised Name Train", quantity: 1, unit_price_minor: 2499, created_at: "2026-10-29T09:12:01+00:00" },
@@ -45,7 +45,7 @@ describe("toProduct", () => {
     expect(() => toProduct({ ...productRow, attributes: { ageRange: 3 } })).toThrow();
   });
 
-  it("rejects a row whose price is not integer pence", () => {
+  it("rejects a row whose price is not integer paise", () => {
     expect(() => toProduct({ ...productRow, price_minor: 12.99 })).toThrow();
   });
 

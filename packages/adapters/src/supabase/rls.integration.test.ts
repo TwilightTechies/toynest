@@ -60,7 +60,7 @@ describe.skipIf(!ready)("RLS (isolation layer 4)", () => {
         status: "placed",
         placed_at: new Date().toISOString(),
         total_minor: 1000,
-        currency: "GBP",
+        currency: "INR",
       })
       .select("id")
       .single();
@@ -91,7 +91,7 @@ describe.skipIf(!ready)("RLS (isolation layer 4)", () => {
         name: "RLS draft product",
         category_id: (category.data as { id: string }).id,
         price_minor: 100,
-        currency: "GBP",
+        currency: "INR",
         status: "draft",
       })
       .select("id")
@@ -148,7 +148,7 @@ describe.skipIf(!ready)("RLS (isolation layer 4)", () => {
       status: "placed",
       placed_at: new Date().toISOString(),
       total_minor: 1,
-      currency: "GBP",
+      currency: "INR",
     });
     expect(insert.error).not.toBeNull();
 

@@ -1,3 +1,4 @@
+import { formatMoney } from "@toynest/core";
 import type { CompletedToolCall } from "../agent-loop";
 import { EscalationOutput, OrderViewOutput, RefundOutput, VerifiedCustomerOutput, type OrderView } from "./tools";
 
@@ -53,9 +54,8 @@ export function applyToolCalls(facts: CaseFacts, calls: readonly CompletedToolCa
   return next;
 }
 
-export function formatMoney(minor: number, currency = "GBP"): string {
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(minor / 100);
-}
+// One money formatter for the whole app (₹ with Indian grouping); re-exported for the prompt and tools.
+export { formatMoney };
 
 export function renderCaseFacts(facts: CaseFacts): string {
   const lines: string[] = [];

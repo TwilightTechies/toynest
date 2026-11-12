@@ -31,7 +31,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* Applies a stored light/dark choice before first paint (no flash of the wrong theme). */}
+        {/* Applies a stored light/dark choice before first paint (no flash of the wrong theme).
+            A plain inline script on purpose: next/script's beforeInteractive is queued for Next's
+            runtime in the App Router, so it would run after paint. React logs a dev-only warning
+            ("scripts inside React components are never executed when rendering on the client");
+            that is expected: this script only needs to run once, from the server HTML. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body className="flex min-h-full flex-col font-sans">

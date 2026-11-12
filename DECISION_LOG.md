@@ -124,3 +124,15 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - A path-scoped rule (`.claude/rules/web-ui.md`) records these conventions, so later sessions apply them when they edit web UI files.
 - **Alternatives:** Figma mock-ups first (an extra round-trip; tokens make code changes cheap); a component library such as shadcn/ui (more dependencies than eight pages need); a slide-out drawer with a focus trap (more JS than a short list of links needs).
 - **Consequences:** Support and admin pages inherit the colours and fonts but still use raw `zinc` classes. They move to tokens in the design polish phase. Without JS, phone users can't open the menu or filter panel, but every destination is still reachable from the footer and home page. Visual checks were done with headless Chrome at 375, 768 and 1280 px in light and dark.
+
+## ADR-014 · India localisation: INR in paise, en-IN formatting
+- **Date:** 12 Nov 2026 · **Status:** Accepted
+- **Context:** ToyNest sells in India, but prices, sample orders, the support assistant and UI copy assumed the UK (GBP in pence, `en-GB`, "Under £10", a £50 refund limit). This was fixed before the cart phase so the cart is built on rupees from the start.
+- **Decision:**
+  - Money stays as integer minor units, now **paise** (₹1 = 100 paise). The schema already stores `currency` per row, so there's no migration. Applied migrations keep their old "pence" comments, which this ADR supersedes.
+  - **One formatter:** `formatMoney` in `packages/core/src/domain/money.ts` (`STORE_CURRENCY = "INR"`, `STORE_LOCALE = "en-IN"`). It uses Indian grouping (₹1,24,999) and drops decimals for whole rupees (₹599) but shows paise otherwise, so a fractional amount is never hidden. The web catalogue and the support assistant (`case-facts.ts` re-exports it) both use it. Copy that states a limit is computed from the constant, so it can't drift (e.g. the support page's "refunds up to ₹2,000").
+  - **Fresh Indian price points**, not FX conversion: ₹149–₹1,499. The home shelf is "Under ₹500". The sample orders are recomputed from the new unit prices.
+  - **Support auto-refund limit ₹2,000** (was £50). The prompt tells the model that tool amounts are in paise and gives a ₹ example. The hook message is formatted with `formatMoney`.
+  - URL price filters take rupees (`?max=500`, up to 7 digits, cap ₹10,00,000). The helpers are renamed to currency-neutral `majorUnits` / `formatMajorUnits`.
+- **Alternatives:** Multi-currency with display conversion (no need: one market); storing rupees as `numeric` (rejected in ADR-011: rounding and conversion code); FX-converting GBP prices (gives odd price points like ₹1,429).
+- **Consequences:** The live Supabase project was re-seeded. Changing the currency again would mean changing `STORE_CURRENCY` and the data; `formatMoney` already takes a currency argument. Delivery charges are not part of this ADR; they come with the cart (pincode zones).
