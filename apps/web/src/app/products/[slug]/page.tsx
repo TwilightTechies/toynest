@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ProductImage } from "@/components/product-image";
-import { Badge, buttonClass } from "@/components/ui";
+import { AddToBasketForm } from "@/components/add-to-basket-form";
+import { Badge } from "@/components/ui";
 import { getProduct } from "@/lib/catalog";
 
 type Params = Promise<{ slug: string }>;
@@ -60,11 +61,7 @@ async function Product({ params }: { params: Params }) {
           <p className="mt-3 text-2xl font-bold tabular-nums">{product.price}</p>
           <p className="mt-5 leading-relaxed text-foreground/90">{product.description}</p>
 
-          {/* Placeholder for the cart phase: disabled, and says why, rather than a button that does nothing. */}
-          <button type="button" disabled className={`mt-6 w-full sm:w-auto ${buttonClass("primary")}`}>
-            Add to basket
-          </button>
-          <p className="mt-2 text-sm text-muted">The basket arrives in the next phase.</p>
+          <AddToBasketForm slug={product.slug} personalisable={product.personalisable} />
 
           {product.attributes.length > 0 && (
             <section aria-labelledby="details-heading" className="mt-8 border-t border-border pt-6">

@@ -14,7 +14,17 @@ async function customerIdFor(email: string): Promise<string> {
   return (data as { id: string }).id;
 }
 
-describeRepositoryContract("Supabase", async () => ({ ...createSupabaseRepositories(client!), customerIdFor }), !env);
+async function deleteCarts(ids: string[]): Promise<void> {
+  // cart_items go with them (on delete cascade).
+  const { error } = await client!.from("carts").delete().in("id", ids);
+  if (error) throw new Error(`Cleaning up test carts failed: ${error.message}`);
+}
+
+describeRepositoryContract(
+  "Supabase",
+  async () => ({ ...createSupabaseRepositories(client!), customerIdFor, deleteCarts }),
+  !env,
+);
 
 // Full-text search behaviour that only Postgres provides (the in-memory adapter does substring matching).
 describe.skipIf(!env)("Supabase full-text search", () => {

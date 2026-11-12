@@ -4,9 +4,17 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CategoryRepository, CustomerRepository, OrderRepository, ProductRepository } from "@toynest/core";
-import { describe, expect, it } from "vitest";
+import type {
+  CartRepository,
+  CategoryRepository,
+  CustomerRepository,
+  OrderRepository,
+  ProductRepository,
+  ShippingZoneRepository,
+} from "@toynest/core";
+import { afterAll, describe, expect, it } from "vitest";
 import { SampleCatalogSchema, type SampleProduct } from "../in-memory/sample-catalog";
+import { ShippingZonesFileSchema } from "../in-memory/sample-cart";
 import { SampleSupportSchema } from "../in-memory/sample-support";
 
 export interface ContractSubject {
@@ -14,14 +22,19 @@ export interface ContractSubject {
   categories: CategoryRepository;
   customers: CustomerRepository;
   orders: OrderRepository;
+  carts: CartRepository;
+  shippingZones: ShippingZoneRepository;
   // Ids are generated per data source, so tests look customers up by email.
   customerIdFor(email: string): Promise<string>;
+  // Removes baskets the tests created (a real database keeps them otherwise).
+  deleteCarts?(ids: string[]): Promise<void>;
 }
 
 const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../data");
 const read = (file: string): unknown => JSON.parse(readFileSync(path.join(dataDir, file), "utf8"));
 export const catalog = SampleCatalogSchema.parse(read("sample-catalog.json"));
 export const support = SampleSupportSchema.parse(read("sample-support.json"));
+export const shipping = ShippingZonesFileSchema.parse(read("shipping-zones.json"));
 
 // Orders flagged simulateOutage only fail in the in-memory demo, so the shared contract avoids them.
 const orders = support.orders.filter((order) => !order.simulateOutage);
@@ -113,6 +126,101 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
         const { items, total } = await products.search({ minPriceMinor: 24900, maxPriceMinor: 59900, limit: 100, offset: 0 });
         expect(total).toBe(inRange.length);
         expect(items.map((p) => p.slug).sort()).toEqual(inRange.map((p) => p.slug).sort());
+      });
+
+      it("finds products by id, ignoring unknown ids", async () => {
+        const { products } = await subject();
+        const puzzle = (await products.findBySlug("wooden-number-puzzle"))!;
+        const train = (await products.findBySlug("personalised-name-train"))!;
+        const found = await products.findByIds([puzzle.id, train.id, "00000000-0000-4000-8000-000000000000"]);
+        expect(found.map((p) => p.slug).sort()).toEqual(["personalised-name-train", "wooden-number-puzzle"]);
+        expect(train.attributes.personalisation).toBe("name");
+        expect(await products.findByIds([])).toEqual([]);
+      });
+    });
+
+    describe("shipping zones", () => {
+      it("lists every zone from the shared JSON, with exactly one default", async () => {
+        const zones = await (await subject()).shippingZones.list();
+        expect(zones.map((z) => z.slug).sort()).toEqual(shipping.zones.map((z) => z.slug).sort());
+        expect(zones.filter((z) => z.isDefault)).toHaveLength(1);
+        const metro = zones.find((z) => z.slug === "metro");
+        expect(metro).toMatchObject({ feeMinor: 4900, freeOverMinor: 49900 });
+        expect(metro?.pincodePrefixes).toContain("560");
+      });
+    });
+
+    describe("carts (scoped by the cart id from the cookie)", () => {
+      const created: string[] = [];
+      afterAll(async () => {
+        if (created.length > 0) await s?.deleteCarts?.(created);
+      });
+      const newCart = async () => {
+        const cart = await (await subject()).carts.create();
+        created.push(cart.id);
+        return cart;
+      };
+      const productId = async (slug: string) => (await (await subject()).products.findBySlug(slug))!.id;
+
+      it("creates an empty cart and returns null for unknown ids", async () => {
+        const { carts } = await subject();
+        const cart = await newCart();
+        expect(cart).toMatchObject({ pincode: null, lines: [] });
+        expect(await carts.get("00000000-0000-4000-8000-000000000000")).toBeNull();
+        expect(await carts.get("not-a-uuid")).toBeNull();
+      });
+
+      it("merges adds of the same product and name, capped at 10", async () => {
+        const { carts } = await subject();
+        const cart = await newCart();
+        const puzzle = await productId("wooden-number-puzzle");
+        await carts.addLine(cart.id, { productId: puzzle, personalisationName: null, quantity: 2 });
+        await carts.addLine(cart.id, { productId: puzzle, personalisationName: null, quantity: 3 });
+        expect((await carts.get(cart.id))?.lines.map((l) => l.quantity)).toEqual([5]);
+        await carts.addLine(cart.id, { productId: puzzle, personalisationName: null, quantity: 9 });
+        expect((await carts.get(cart.id))?.lines.map((l) => l.quantity)).toEqual([10]);
+      });
+
+      it("keeps the same product with two names as two lines, in the order added", async () => {
+        const { carts } = await subject();
+        const cart = await newCart();
+        const train = await productId("personalised-name-train");
+        await carts.addLine(cart.id, { productId: train, personalisationName: "Aarav", quantity: 1 });
+        await carts.addLine(cart.id, { productId: train, personalisationName: "Diya", quantity: 1 });
+        await carts.addLine(cart.id, { productId: train, personalisationName: "Aarav", quantity: 1 });
+        const lines = (await carts.get(cart.id))!.lines;
+        expect(lines.map((l) => [l.personalisationName, l.quantity])).toEqual([
+          ["Aarav", 2],
+          ["Diya", 1],
+        ]);
+      });
+
+      it("updates and removes lines, but only within the same cart", async () => {
+        const { carts } = await subject();
+        const mine = await newCart();
+        const other = await newCart();
+        await carts.addLine(mine.id, { productId: await productId("wind-up-robot"), personalisationName: null, quantity: 1 });
+        const [line] = (await carts.get(mine.id))!.lines;
+
+        // Another cart's id with my line id: not found, nothing changes.
+        expect(await carts.setQuantity(other.id, line!.id, 7)).toBe(false);
+        expect(await carts.removeLine(other.id, line!.id)).toBe(false);
+        expect((await carts.get(mine.id))?.lines[0]?.quantity).toBe(1);
+
+        expect(await carts.setQuantity(mine.id, line!.id, 4)).toBe(true);
+        expect((await carts.get(mine.id))?.lines[0]?.quantity).toBe(4);
+        expect(await carts.removeLine(mine.id, line!.id)).toBe(true);
+        expect((await carts.get(mine.id))?.lines).toEqual([]);
+        expect(await carts.removeLine(mine.id, line!.id)).toBe(false);
+      });
+
+      it("stores and clears the pincode", async () => {
+        const { carts } = await subject();
+        const cart = await newCart();
+        await carts.setPincode(cart.id, "560001");
+        expect((await carts.get(cart.id))?.pincode).toBe("560001");
+        await carts.setPincode(cart.id, null);
+        expect((await carts.get(cart.id))?.pincode).toBeNull();
       });
     });
 

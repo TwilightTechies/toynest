@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./sample-catalog": "./src/in-memory/sample-catalog.ts",
     "./sample-support": "./src/in-memory/sample-support.ts",
+    "./sample-cart": "./src/in-memory/sample-cart.ts",
     "./anthropic": "./src/anthropic/anthropic-provider.ts",
     "./supabase": "./src/supabase/index.ts"
   },

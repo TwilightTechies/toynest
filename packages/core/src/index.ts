@@ -1,11 +1,16 @@
+export * from "./domain/cart";
+export * from "./domain/cart-pricing";
 export * from "./domain/catalog-query";
 export * from "./domain/category";
 export * from "./domain/customer";
 export * from "./domain/money";
 export * from "./domain/order";
 export * from "./domain/product";
+export * from "./domain/shipping";
 export * from "./errors";
+export type * from "./ports/cart-repository";
 export type * from "./ports/category-repository";
 export type * from "./ports/customer-repository";
 export type * from "./ports/order-repository";
 export type * from "./ports/product-repository";
+export type * from "./ports/shipping-zone-repository";
