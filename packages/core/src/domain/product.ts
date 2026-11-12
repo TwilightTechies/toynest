@@ -16,7 +16,14 @@ export const ProductSchema = z.object({
   priceMinor: z.number().int().nonnegative(),
   currency: z.string().length(3),
   status: ProductStatusSchema,
+  // Category attributes such as { ageRange: "3-5 years", material: "Wood" }.
+  attributes: z.record(z.string(), z.string()),
+  createdAt: z.iso.datetime(),
 });
 
+// "relevance" only differs from "name" when there is search text.
+export const ProductSortSchema = z.enum(["relevance", "price-asc", "price-desc", "newest", "name"]);
+
 export type Product = z.infer<typeof ProductSchema>;
+export type ProductSort = z.infer<typeof ProductSortSchema>;
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;

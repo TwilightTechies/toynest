@@ -1,3 +1,4 @@
+export * from "./domain/catalog-query";
 export * from "./domain/category";
 export * from "./domain/customer";
 export * from "./domain/order";

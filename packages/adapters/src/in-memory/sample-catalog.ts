@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import type { Category, CategoryRepository, Product, ProductRepository } from "@toynest/core";
+import type { Category, CategoryRepository, Product, ProductRepository, ProductSort } from "@toynest/core";
 import { z } from "zod";
 
 export const SampleCatalogSchema = z.object({
@@ -16,11 +16,22 @@ export const SampleCatalogSchema = z.object({
       currency: z.string().length(3),
       ageRange: z.string(),
       material: z.string(),
+      // Date the product was added to the shop; drives the "newest" sort and "New arrivals".
+      addedOn: z.iso.date(),
     }),
   ),
 });
 
 export type SampleProduct = z.infer<typeof SampleCatalogSchema>["products"][number];
+
+// Shared with the Supabase seed script, so both data sources hold identical attributes and dates.
+export function sampleProductAttributes(product: SampleProduct): Record<string, string> {
+  return { ageRange: product.ageRange, material: product.material };
+}
+
+export function sampleProductCreatedAt(product: SampleProduct): string {
+  return `${product.addedOn}T00:00:00.000Z`;
+}
 
 // Shared with the Supabase seed script, so both data sources describe products identically.
 export function describeSampleProduct(product: SampleProduct): string {
@@ -51,23 +62,45 @@ export async function loadSampleCatalog(filePath: string): Promise<Catalog> {
       priceMinor: product.priceMinor,
       currency: product.currency,
       status: "active",
+      attributes: sampleProductAttributes(product),
+      createdAt: sampleProductCreatedAt(product),
     };
   });
 
   return { products: createInMemoryProductRepository(products), categories: { list: async () => categories } };
 }
 
+const byName = (a: Product, b: Product) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+
+// Mirrors the order by of the search_products SQL function. In-memory "relevance" is simply the
+// match order (no ranking), so the contract tests never assert relevance order across adapters.
+const comparators: Record<ProductSort, ((a: Product, b: Product) => number) | null> = {
+  relevance: null,
+  name: byName,
+  "price-asc": (a, b) => a.priceMinor - b.priceMinor || byName(a, b),
+  "price-desc": (a, b) => b.priceMinor - a.priceMinor || byName(a, b),
+  newest: (a, b) => b.createdAt.localeCompare(a.createdAt) || byName(a, b),
+};
+
 export function createInMemoryProductRepository(products: Product[]): ProductRepository {
   return {
     findBySlug: async (slug) => products.find((product) => product.slug === slug) ?? null,
-    search: async ({ text = "", categoryId, limit, offset }) => {
+    search: async ({ text = "", categoryId, minPriceMinor, maxPriceMinor, sort = "relevance", limit, offset }) => {
       const words = text.toLowerCase().split(/\s+/).filter(Boolean);
       const matches = products.filter((product) => {
         const haystack = `${product.name} ${product.description}`.toLowerCase();
         const matchesText = words.length === 0 || words.some((word) => haystack.includes(word));
-        return matchesText && (!categoryId || product.categoryId === categoryId);
+        return (
+          matchesText &&
+          (!categoryId || product.categoryId === categoryId) &&
+          (minPriceMinor === undefined || product.priceMinor >= minPriceMinor) &&
+          (maxPriceMinor === undefined || product.priceMinor <= maxPriceMinor)
+        );
       });
-      return { items: matches.slice(offset, offset + limit), total: matches.length };
+      // With no search text, relevance means name order (as in SQL).
+      const compare = comparators[sort] ?? (words.length === 0 ? byName : null);
+      const ordered = compare ? [...matches].sort(compare) : matches;
+      return { items: ordered.slice(offset, offset + limit), total: matches.length };
     },
   };
 }

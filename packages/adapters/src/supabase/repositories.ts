@@ -30,12 +30,15 @@ export function createSupabaseProductRepository(client: SupabaseClient): Product
       if (result.error) throw toRepositoryError(result, "products.findBySlug");
       return result.data ? toProduct(result.data) : null;
     },
-    async search({ text, categoryId, limit, offset }) {
+    async search({ text, categoryId, minPriceMinor, maxPriceMinor, sort = "relevance", limit, offset }) {
       const result = await client.rpc("search_products", {
         search_text: text?.trim() || null,
         category: categoryId ?? null,
         page_limit: limit,
         page_offset: offset,
+        sort_by: sort,
+        min_price: minPriceMinor ?? null,
+        max_price: maxPriceMinor ?? null,
       });
       if (result.error) throw toRepositoryError(result, "products.search");
       const rows = z.array(SearchRowSchema).parse(result.data);

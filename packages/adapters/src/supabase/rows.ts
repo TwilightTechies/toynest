@@ -13,7 +13,11 @@ import { z } from "zod";
 // Every row is validated on the way out of the database (an external boundary), then mapped to
 // the domain type and validated again, so a schema drift fails loudly in the adapter.
 
-export const PRODUCT_COLUMNS = "id, slug, name, description, category_id, price_minor, currency, status";
+// Postgres returns "2026-10-29T09:12:00+00:00"; the domain uses UTC ISO strings ("...Z").
+const toIsoUtc = (value: string) => new Date(value).toISOString();
+
+export const PRODUCT_COLUMNS =
+  "id, slug, name, description, category_id, price_minor, currency, status, attributes, created_at";
 
 export const ProductRowSchema = z.object({
   id: z.string(),
@@ -24,6 +28,9 @@ export const ProductRowSchema = z.object({
   price_minor: z.number().int(),
   currency: z.string(),
   status: z.string(),
+  // jsonb: only string values are shown on the storefront; anything else is schema drift.
+  attributes: z.record(z.string(), z.string()),
+  created_at: z.string(),
 });
 
 export const SearchRowSchema = ProductRowSchema.extend({ total_count: z.coerce.number().int() });
@@ -39,6 +46,8 @@ export function toProduct(row: unknown): Product {
     priceMinor: r.price_minor,
     currency: r.currency,
     status: r.status,
+    attributes: r.attributes,
+    createdAt: toIsoUtc(r.created_at),
   });
 }
 
@@ -86,9 +95,6 @@ const OrderRowSchema = z.object({
     }),
   ),
 });
-
-// Postgres returns "2026-10-29T09:12:00+00:00"; the domain uses UTC ISO strings ("...Z").
-const toIsoUtc = (value: string) => new Date(value).toISOString();
 
 export function toOrder(row: unknown): Order {
   const r = OrderRowSchema.parse(row);

@@ -25,6 +25,8 @@ const productList: Product[] = [
     priceMinor: 1299,
     currency: "GBP",
     status: "active",
+    attributes: { ageRange: "3-5 years", material: "Wood" },
+    createdAt: "2026-10-01T00:00:00.000Z",
   },
 ];
 

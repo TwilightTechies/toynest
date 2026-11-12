@@ -1,8 +1,13 @@
-import type { Product } from "../domain/product";
+import type { Product, ProductSort } from "../domain/product";
 
 export interface ProductSearchQuery {
   text?: string;
   categoryId?: string;
+  // Inclusive bounds in minor units (pence).
+  minPriceMinor?: number;
+  maxPriceMinor?: number;
+  // Defaults to "relevance". Every sort breaks ties by name, so pages are stable.
+  sort?: ProductSort;
   limit: number;
   offset: number;
 }

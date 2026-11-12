@@ -5,7 +5,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { describeSampleProduct, SampleCatalogSchema } from "../src/in-memory/sample-catalog";
+import {
+  describeSampleProduct,
+  SampleCatalogSchema,
+  sampleProductAttributes,
+  sampleProductCreatedAt,
+} from "../src/in-memory/sample-catalog";
 import { SampleSupportSchema } from "../src/in-memory/sample-support";
 import { createSupabaseClient, readSupabaseEnv, type SupabaseClient } from "../src/supabase/client";
 
@@ -57,7 +62,8 @@ async function main() {
         price_minor: p.priceMinor,
         currency: p.currency,
         status: "active",
-        attributes: { ageRange: p.ageRange, material: p.material },
+        attributes: sampleProductAttributes(p),
+        created_at: sampleProductCreatedAt(p),
       };
     }),
     "slug",
