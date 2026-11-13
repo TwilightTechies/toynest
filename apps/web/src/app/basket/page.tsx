@@ -147,11 +147,13 @@ function Summary({ basket }: { basket: BasketView }) {
         <p className="text-sm text-muted">Delivery charges depend on your pincode.</p>
       )}
 
-      {/* Checkout is the next phase: shown disabled, saying why, rather than a button that does nothing. */}
-      <button type="button" disabled className={buttonClass("primary")}>
-        Checkout
-      </button>
-      <p className="-mt-3 text-center text-xs text-muted">Checkout arrives in the next phase.</p>
+      {basket.hasUnavailable ? (
+        <p className="text-sm">Remove the items that are no longer available to check out.</p>
+      ) : (
+        <Link href="/checkout" className={`${buttonClass("primary")} min-h-11`}>
+          Checkout
+        </Link>
+      )}
     </aside>
   );
 }

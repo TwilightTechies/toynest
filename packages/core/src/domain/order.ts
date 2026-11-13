@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { SlugSchema } from "./product";
 
-export const OrderStatusSchema = z.enum(["placed", "dispatched", "delivered", "cancelled"]);
+// awaiting_payment: an online-payment order that isn't paid yet (ADR-019).
+export const OrderStatusSchema = z.enum(["awaiting_payment", "placed", "dispatched", "delivered", "cancelled"]);
+
+// "TN-" plus 4 to 8 digits. Seeded orders are TN-10xx; checkout numbers start at TN-20001 (ADR-019).
+export const ORDER_NUMBER_PATTERN = /^TN-\d{4,8}$/;
 
 export const OrderItemSchema = z.object({
   productSlug: SlugSchema,
@@ -12,7 +16,7 @@ export const OrderItemSchema = z.object({
 
 // Money in minor units (paise). refundedMinor is the total already refunded on this order.
 export const OrderSchema = z.object({
-  id: z.string().regex(/^TN-\d{4}$/, "Order ids look like TN-1042"),
+  id: z.string().regex(ORDER_NUMBER_PATTERN, "Order ids look like TN-1042"),
   customerId: z.string().min(1),
   status: OrderStatusSchema,
   placedAt: z.iso.datetime(),

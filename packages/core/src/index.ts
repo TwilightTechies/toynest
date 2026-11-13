@@ -1,6 +1,8 @@
 export * from "./domain/cart";
 export * from "./domain/cart-pricing";
 export * from "./domain/catalog-query";
+export * from "./domain/checkout";
+export * from "./domain/checkout-service";
 export * from "./domain/category";
 export * from "./domain/category-admin";
 export * from "./domain/category-admin-service";
@@ -18,6 +20,7 @@ export type * from "./ports/admin-session";
 export type * from "./ports/cart-repository";
 export type * from "./ports/category-admin-repository";
 export type * from "./ports/category-repository";
+export type * from "./ports/checkout";
 export type * from "./ports/customer-repository";
 export type * from "./ports/image-processor";
 export type * from "./ports/order-repository";

@@ -1,6 +1,7 @@
 import "server-only";
 import {
   formatMoney,
+  markNotForSale,
   priceCart,
   resolveShippingZone,
   type Cart,
@@ -28,7 +29,7 @@ const cookieOptions = () =>
   }) as const;
 
 // The cookie is an external boundary: anything that isn't a uuid is treated as "no basket".
-async function readCartId(): Promise<string | null> {
+export async function readCartId(): Promise<string | null> {
   const value = (await cookies()).get(CART_COOKIE)?.value;
   const parsed = z.uuid().safeParse(value);
   return parsed.success ? parsed.data : null;
@@ -76,6 +77,7 @@ export interface BasketView {
   // Free-delivery threshold of the zone, for the "free over" note.
   freeOver: string | null;
   total: string;
+  totalMinor: number;
   hasUnavailable: boolean;
 }
 
@@ -125,6 +127,8 @@ export async function getBasketView(): Promise<BasketView | null> {
       priced.freeDeliveryRemainingMinor === null ? null : formatMoney(priced.freeDeliveryRemainingMinor),
     freeOver: priced.zone?.freeOverMinor != null ? formatMoney(priced.zone.freeOverMinor) : null,
     total: formatMoney(priced.totalMinor),
+    // For rules that compare amounts (e.g. the Cash on Delivery limit); display uses `total`.
+    totalMinor: priced.totalMinor,
     hasUnavailable: priced.lines.some((p) => p.status === "unavailable"),
   };
 }
@@ -135,12 +139,11 @@ export async function productsForSale(rows: Product[]): Promise<Product[]> {
   return (await withSaleStatus(rows)).filter((product) => product.status === "active");
 }
 
-// For pricing: a product in a hidden category is priced like an archived one ("unavailable", left
-// out of the total) but keeps its name, so the shopper can see which line it was.
+// For pricing: the shop's category list holds shown categories only (ADR-018), and core's
+// markNotForSale prices anything else like an archived product while keeping its name.
 async function withSaleStatus(rows: Product[]): Promise<Product[]> {
   const { categories } = await getRepositories();
-  const shown = new Set((await categories.list()).map((category) => category.id));
-  return rows.map((product) => (shown.has(product.categoryId) ? product : { ...product, status: "archived" as const }));
+  return markNotForSale(rows, new Set((await categories.list()).map((category) => category.id)));
 }
 
 // Header badge: number of items in available lines (0 without a basket).
@@ -150,4 +153,10 @@ export async function getBasketCount(): Promise<number> {
   if (!cart || cart.lines.length === 0) return 0;
   const rows = await products.findByIds([...new Set(cart.lines.map((line) => line.productId))]);
   return priceCart({ lines: cart.lines, products: await withSaleStatus(rows), zone: null }).itemCount;
+}
+
+// After an order succeeds (ADR-019) the basket is deleted; the cookie goes too, so the shopper
+// starts fresh.
+export async function clearCartCookie(): Promise<void> {
+  (await cookies()).delete(CART_COOKIE);
 }

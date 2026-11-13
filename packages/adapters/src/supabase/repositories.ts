@@ -1,11 +1,12 @@
-import type {
-  CartRepository,
-  CategoryRepository,
-  Customer,
-  CustomerRepository,
-  OrderRepository,
-  ProductRepository,
-  ShippingZoneRepository,
+import {
+  ORDER_NUMBER_PATTERN,
+  type CartRepository,
+  type CategoryRepository,
+  type Customer,
+  type CustomerRepository,
+  type OrderRepository,
+  type ProductRepository,
+  type ShippingZoneRepository,
 } from "@toynest/core";
 import { z } from "zod";
 import type { SupabaseClient } from "./client";
@@ -28,7 +29,7 @@ import {
 } from "./rows";
 
 const isUuid = (value: string) => z.uuid().safeParse(value).success;
-const isOrderNumber = (value: string) => /^TN-\d{4}$/.test(value);
+const isOrderNumber = (value: string) => ORDER_NUMBER_PATTERN.test(value);
 
 export function createSupabaseProductRepository(client: SupabaseClient): ProductRepository {
   return {
@@ -127,6 +128,12 @@ export function createSupabaseCartRepository(client: SupabaseClient): CartReposi
       if (!isUuid(cartId)) return;
       const result = await client.from("carts").update({ pincode }).eq("id", cartId);
       if (result.error) throw toRepositoryError(result, "carts.setPincode");
+    },
+    async delete(cartId) {
+      if (!isUuid(cartId)) return;
+      // cart_items go with it (on delete cascade).
+      const result = await client.from("carts").delete().eq("id", cartId);
+      if (result.error) throw toRepositoryError(result, "carts.delete");
     },
   };
 }

@@ -1,4 +1,10 @@
-import { RepositoryUnavailableError, type CustomerRepository, type Order, type OrderRepository } from "@toynest/core";
+import {
+  ORDER_NUMBER_PATTERN,
+  RepositoryUnavailableError,
+  type CustomerRepository,
+  type Order,
+  type OrderRepository,
+} from "@toynest/core";
 import { z } from "zod";
 import { defineTool, ToolError, type Tool } from "../tool";
 
@@ -59,7 +65,7 @@ export const RefundOutput = z.object({
 
 export const EscalationOutput = z.object({ ticketId: z.string(), orderId: z.string().nullable(), rootCause: z.string() });
 
-const OrderIdSchema = z.string().regex(/^TN-\d{4}$/, "Order ids look like TN-1042");
+const OrderIdSchema = z.string().regex(ORDER_NUMBER_PATTERN, "Order ids look like TN-1042");
 
 export function createSupportTools(session: SupportSession, deps: SupportDeps): Tool[] {
   const now = deps.now ?? (() => new Date());
