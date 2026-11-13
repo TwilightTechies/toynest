@@ -221,3 +221,27 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - Orphaned files need a cleanup job later.
   - Free projects pause after a week of inactivity.
   - Checked with `next start`: 16/16 browser checks (upload 3, alt edit, reorder, delete, an oversized and a fake file rejected, gallery thumbnails, product card) and 6 live adapter tests (Storage RLS, the database cap, public URL headers, compensation).
+
+## ADR-018 · Category management: show/hide (seasonal ranges), menu order and labels, admin-only writes
+- **Date:** 13 Nov 2026 · **Status:** Accepted
+- **Context:** The shop is adding Christmas decorations. A category could only be added with SQL, the header menu was hard-coded, and hiding a seasonal range meant archiving each product.
+- **Decision:**
+  - **New columns on `categories`:** `visible` (Show in shop), `sort_order` and `menu_label` (a short header label). Existing rows were numbered in the order they were added, and the seeded categories keep their old short labels ("Educational", "Personalised").
+  - **A hidden category hides its products everywhere in the shop without changing their status**, so a range can be switched off in January and on again in November:
+    - `search_products` joins visible categories (listing, search, filters, home);
+    - the shop's `CategoryRepository.list()` returns shown categories only, so the product page returns "not found";
+    - the basket marks those lines "no longer available", keeps their names and leaves them out of the total;
+    - add-to-basket refuses them;
+    - public RLS on `categories` and `products` (and therefore `product_images`) requires `visible`, as defence in depth.
+  - **A separate `CategoryAdminRepository`** (user-scoped client) sees hidden categories, so products can be prepared before launch. `ProductAdminService` receives it, because its `list()` has the same shape.
+  - **New categories start hidden and go last.** The slug is fixed after creation, because it's in shop URLs. Required details are typed as labels and stored as keys ("Learning focus" → `learningFocus`), with at most 10. Adding a required detail never unpublishes anything; the category page lists how many live products are missing it.
+  - **Delete only an empty category.** The foreign key refuses otherwise, and the UI suggests hiding it.
+  - **Optimistic concurrency** on the raw `updated_at`, as in ADR-016.
+  - **The header menu comes from the database** (`getMenuCategories`: `"use cache"` + the `catalog` tag), so it stays in the static shell and updates after an admin edit. Because the number of links now varies, the inline menu starts at `xl` (1280 px) instead of `lg`, with `whitespace-nowrap`; below that, the menu button is used.
+  - The AI draft tools and MCP `get_categories` use the shop port, so hidden categories aren't offered to the model.
+- **Alternatives:** Archiving each seasonal product (loses which ones were live, and it's slow); a `starts_at`/`ends_at` schedule (useful later, but more than a switch is needed now); a hard-coded menu (needs a deploy for each new category); editable slugs (break links, and would need redirects).
+- **Consequences:**
+  - The Supabase contract tests now check seeded data only, so admin-added products and categories don't break them.
+  - The seed script leaves `visible`, `sort_order` and `menu_label` alone, so re-seeding keeps admin choices.
+  - A shown category with no live products gives an empty listing; hide it until products are ready.
+  - Checked with `next start`: 15/15 browser checks (create hidden → show → menu, product page and basket → reorder → hide → basket unavailable → stale version → delete refused, then allowed), and 5 live adapter tests.

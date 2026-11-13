@@ -4,7 +4,7 @@ import { z } from "zod";
 import { toRepositoryError } from "./errors";
 import { createSupabaseProductAdminRepository } from "./product-admin-repository";
 import { createSupabaseProductImageAdminRepository } from "./product-image-repository";
-import { createSupabaseCategoryRepository } from "./repositories";
+import { createSupabaseCategoryAdminRepository } from "./category-admin-repository";
 
 export type { CookieOptions as SessionCookieOptions };
 
@@ -83,7 +83,8 @@ export function createSupabaseAdminContext({ url, anonKey, cookies, secureCookie
     session,
     products: createSupabaseProductAdminRepository(client),
     productImages: createSupabaseProductImageAdminRepository(client),
-    categories: createSupabaseCategoryRepository(client),
+    // All categories, hidden ones included: admins prepare seasonal ranges before showing them.
+    categories: createSupabaseCategoryAdminRepository(client),
   };
 }
 

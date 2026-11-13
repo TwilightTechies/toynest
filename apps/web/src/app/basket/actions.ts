@@ -9,7 +9,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { cartForWrite } from "@/lib/cart";
+import { cartForWrite, productsForSale } from "@/lib/cart";
 import { getRepositories } from "@/lib/data";
 
 // Every form field is an external boundary: validated here, before anything reaches a repository.
@@ -31,8 +31,10 @@ export async function addToBasket(_previous: AddToBasketState, formData: FormDat
 
   const { products } = await getRepositories();
   const product = await products.findBySlug(slug.data);
-  // Same rule as the product page: drafts and archived products are not for sale.
-  if (!product || product.status !== "active") return { error: "This product is no longer available.", field: null };
+  // Same rule as the product page: drafts, archived products and hidden categories are not for sale.
+  if (!product || (await productsForSale([product])).length === 0) {
+    return { error: "This product is no longer available.", field: null };
+  }
 
   const name = formData.get("personalisationName");
   const personalisation = validatePersonalisation(product, typeof name === "string" ? name : null);

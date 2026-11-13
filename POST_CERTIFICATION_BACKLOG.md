@@ -11,6 +11,7 @@ One phase per project session, each on its own `feat/` branch:
 3. ~~Cart~~ (done, ADR-015): basket, name personalisation, delivery by pincode zone
 3a. ~~Admin 1: sign-in + product catalogue editing~~ (done, ADR-016; in-app admin, no external CMS)
 3b. ~~Admin 2: product photos, up to 8 per product, PDP gallery~~ (done, ADR-017)
+3c. ~~Admin 3: categories: create/edit, show/hide (seasonal), menu order and labels~~ (done, ADR-018)
 4. **Checkout** (next)
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
@@ -53,7 +54,9 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Phase 2: product photos (ADR-017)
 - [ ] Orphaned photo cleanup job (storage files with no product_images row)
 - [ ] AI-suggested alt text for photos (a draft until an admin approves it)
-- [ ] Phase 3: categories (and their required attributes), stock, shipping zones
+- [x] Phase 3: categories: show/hide, order, menu labels, required details (ADR-018)
+- [ ] Category schedule (show from / hide after a date) for seasonal ranges
+- [ ] Stock and shipping zones
 - [ ] Featured flag (unblocks the home page "Featured" section)
 - [ ] Variants (colour/size)
 - [ ] Audit trail: who changed what (created_by / updated_by or a change log)

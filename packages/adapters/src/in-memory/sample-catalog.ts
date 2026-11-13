@@ -5,7 +5,13 @@ import { z } from "zod";
 
 export const SampleCatalogSchema = z.object({
   categories: z.array(
-    z.object({ slug: z.string(), name: z.string(), requiredAttributes: z.array(z.string()) }),
+    z.object({
+      slug: z.string(),
+      name: z.string(),
+      requiredAttributes: z.array(z.string()),
+      // Short header label (ADR-018); the name is used when absent.
+      menuLabel: z.string().optional(),
+    }),
   ),
   products: z.array(
     z.object({
@@ -53,7 +59,14 @@ export interface Catalog {
 export async function loadSampleCatalog(filePath: string): Promise<Catalog> {
   const data = SampleCatalogSchema.parse(JSON.parse(await readFile(filePath, "utf8")));
 
-  const categories: Category[] = data.categories.map((category) => ({ id: randomUUID(), ...category }));
+  // Sample categories are all shown, in file order (ADR-018).
+  const categories: Category[] = data.categories.map((category, index) => ({
+    id: randomUUID(),
+    ...category,
+    visible: true,
+    sortOrder: index,
+    menuLabel: category.menuLabel ?? null,
+  }));
   const categoryIdBySlug = new Map(categories.map((category) => [category.slug, category.id]));
 
   const products: Product[] = data.products.map((product) => {

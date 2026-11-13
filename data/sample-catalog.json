@@ -4,11 +4,13 @@
     {
       "slug": "educational-toys",
       "name": "Educational toys",
+      "menuLabel": "Educational",
       "requiredAttributes": ["ageRange", "material", "learningFocus"]
     },
     {
       "slug": "personalised-toys",
       "name": "Personalised toys",
+      "menuLabel": "Personalised",
       "requiredAttributes": ["ageRange", "material", "personalisationOptions"]
     },
     {
