@@ -245,3 +245,33 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - The seed script leaves `visible`, `sort_order` and `menu_label` alone, so re-seeding keeps admin choices.
   - A shown category with no live products gives an empty listing; hide it until products are ready.
   - Checked with `next start`: 15/15 browser checks (create hidden → show → menu, product page and basket → reorder → hide → basket unavailable → stale version → delete refused, then allowed), and 5 live adapter tests.
+
+## ADR-019 · Checkout: guest orders with frozen prices, mock online payment and Cash on Delivery
+- **Date:** 13 Nov 2026 · **Status:** Accepted
+- **Context:** Baskets couldn't become orders. The shop needs a delivery address, a payment step and a record of what was bought at what price. No real money moves yet; customer accounts come in the auth phase.
+- **Decision:**
+  - **Guest checkout.** `orders.customer_id` becomes nullable. A guest order stores the contact details (name, email, Indian mobile normalised to 10 digits) and the address (state or UT from a fixed list of 36, pincode). A check requires either a customer or those guest details.
+  - **Prices are frozen and computed on the server only.** Checkout re-reads the basket and current products and prices them with core `priceCart`, the only pricing function. It stores each line's unit price, name, slug and personalisation, plus the subtotal, delivery, total and zone name. No price is read from the form: a forged `price` field is ignored. A database check makes the total equal subtotal plus delivery. If any line is unavailable (archived, or in a hidden category via the shared core `markNotForSale`), the shopper goes back to the basket.
+  - **Atomic order creation.** `place_order(payload)` writes the order and its lines in one transaction and numbers it from `order_number_seq`, which starts at **TN-20001**. The order-number format widens to `TN-` plus 4–8 digits in the database, the domain, the adapters and the support tool. Only the service role may execute it.
+  - **Idempotency:**
+    - Each checkout page view carries a random token, and `orders.checkout_token` is unique. A double submit, or two simultaneous requests, gives one order: the function catches the unique violation and returns the winner's id.
+    - A partial unique index allows only one open payment attempt per order (`started` / `pending`).
+    - Paying an order that is already paid doesn't charge again.
+    - Payment moves are conditional on the current `payment_status`, so a late "failed" can't undo a payment that succeeded.
+  - **Payment:**
+    - A `PaymentProvider` port with a stateless `MockPaymentProvider`; the outcome and time are encoded in the reference. A labelled test panel picks success, decline or "bank pending", and pending settles on a status check at least 5 seconds later.
+    - Every attempt is recorded in `payments` (server-only; admins can read it).
+    - **Cash on Delivery** up to ₹10,000 (`COD_MAX_MINOR`): the order is placed at once as `cod_due`.
+    - A failed online payment keeps the basket and offers Try again or Pay on delivery instead.
+    - The basket and its cookie are cleared once an order is settled.
+  - **New statuses:** `awaiting_payment` on orders, plus `payment_status` (pending, paid, failed, cod_due).
+  - **The confirmation page uses the order's random uuid** (a capability URL until accounts exist). Guest orders and payments are invisible to the public RLS roles.
+  - **Read-only `/admin/orders`** through admin RLS `select` policies, with an index on `placed_at`.
+- **Alternatives:** Creating a customer row per guest email (anyone typing someone else's email would attach orders to that person's record); pricing in SQL (a second pricing implementation to keep in step); one order row per payment attempt (duplicate orders); a real gateway now (keys, webhooks and a merchant account, which belong to a later phase behind the same port).
+- **Consequences:**
+  - Orders left in `awaiting_payment` need a cleanup job.
+  - Order emails need the notification provider.
+  - Admins can't change status yet.
+  - The auth phase must link guest orders to accounts, for example by verified email.
+  - The `20261113150000_add_checkout_orders` migration bundles several closely linked changes. It was applied before the project's "one concern per migration" rule was in place, so it's left as is rather than rewriting migration history. Later migrations follow the rule (e.g. the separate `orders_placed_at` index).
+  - Checked with `next start`: 17/17 browser checks, run twice (validation, COD, online success, decline then retry, pending then check status, double submit, COD limit, unavailable item, forged price, admin list), and 6 live adapter tests (atomic and idempotent under concurrency, numbering, a total that doesn't add up, one open attempt, conditional moves, RLS).

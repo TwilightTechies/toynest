@@ -10,7 +10,9 @@
     "./sample-cart": "./src/in-memory/sample-cart.ts",
     "./anthropic": "./src/anthropic/anthropic-provider.ts",
     "./supabase": "./src/supabase/index.ts",
-    "./images": "./src/images/sharp-image-processor.ts"
+    "./images": "./src/images/sharp-image-processor.ts",
+    "./payments": "./src/payments/mock-payment-provider.ts",
+    "./sample-checkout": "./src/in-memory/sample-checkout.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

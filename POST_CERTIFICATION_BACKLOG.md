@@ -12,7 +12,7 @@ One phase per project session, each on its own `feat/` branch:
 3a. ~~Admin 1: sign-in + product catalogue editing~~ (done, ADR-016; in-app admin, no external CMS)
 3b. ~~Admin 2: product photos, up to 8 per product, PDP gallery~~ (done, ADR-017)
 3c. ~~Admin 3: categories: create/edit, show/hide (seasonal), menu order and labels~~ (done, ADR-018)
-4. **Checkout** (next)
+4. ~~Checkout~~ (done, ADR-019): guest orders, mock online payment + Cash on Delivery
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
 
@@ -43,8 +43,11 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Cart: add/remove, quantities, personalisation (name text), subtotal and delivery by pincode zone (shipping_zones table), total (ADR-015)
 - [ ] Expire abandoned guest carts (scheduled job on carts.updated_at)
 - [ ] Admin UI for shipping zones (fees, thresholds, pincode prefixes)
-- [ ] Checkout: customer details, shipping address, order summary
-- [ ] MockPaymentProvider: success / failure / pending
+- [x] Checkout: customer details, shipping address, order summary (ADR-019)
+- [x] MockPaymentProvider: success / failure / pending, plus Cash on Delivery (ADR-019)
+- [ ] Real payment gateway (e.g. Razorpay) behind the PaymentProvider port, with webhooks
+- [ ] Order confirmation emails (needs the notification provider)
+- [ ] Clean up orders left in awaiting_payment (scheduled job)
 - [ ] Customer account: registration, password recovery, profile, order history UI
 
 ## Admin
@@ -62,7 +65,8 @@ One phase per project session, each on its own `feat/` branch:
 - [ ] Audit trail: who changed what (created_by / updated_by or a change log)
 - [ ] Dashboard: counts, sales summary, low-stock, recent orders
 - [ ] Inventory management
-- [ ] Order management: status updates, payment tracking
+- [x] Read-only order list (ADR-019)
+- [ ] Order management: status updates, dispatch, payment tracking
 
 ## Platform
 - [ ] Rate limiting
