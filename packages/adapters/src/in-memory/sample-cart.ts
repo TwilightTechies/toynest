@@ -64,5 +64,8 @@ export function createInMemoryCartRepository(): CartRepository {
       const cart = carts.get(cartId);
       if (cart) cart.pincode = pincode;
     },
+    async delete(cartId) {
+      carts.delete(cartId);
+    },
   };
 }

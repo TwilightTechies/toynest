@@ -5,6 +5,7 @@ import { toRepositoryError } from "./errors";
 import { createSupabaseProductAdminRepository } from "./product-admin-repository";
 import { createSupabaseProductImageAdminRepository } from "./product-image-repository";
 import { createSupabaseCategoryAdminRepository } from "./category-admin-repository";
+import { createSupabaseAdminOrderRepository } from "./checkout-repository";
 
 export type { CookieOptions as SessionCookieOptions };
 
@@ -85,6 +86,7 @@ export function createSupabaseAdminContext({ url, anonKey, cookies, secureCookie
     productImages: createSupabaseProductImageAdminRepository(client),
     // All categories, hidden ones included: admins prepare seasonal ranges before showing them.
     categories: createSupabaseCategoryAdminRepository(client),
+    orders: createSupabaseAdminOrderRepository(client),
   };
 }
 
