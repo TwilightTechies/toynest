@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { CatalogItem } from "@/lib/catalog";
-import { ProductImage } from "./product-image";
+import { ProductCardPhoto } from "./product-photo";
 
 export function ProductCard({ item }: { item: CatalogItem }) {
   return (
     <li className="group relative flex flex-col rounded-2xl border border-border bg-surface-raised p-3 transition-shadow hover:shadow-md">
-      <ProductImage categorySlug={item.categorySlug} />
+      <ProductCardPhoto image={item.image} categorySlug={item.categorySlug} />
       <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted">{item.categoryName}</span>
         <h3 className="mt-1 font-display text-lg font-semibold leading-snug">

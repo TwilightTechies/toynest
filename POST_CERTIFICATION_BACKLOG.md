@@ -10,6 +10,7 @@ One phase per project session, each on its own `feat/` branch:
 2a. ~~India localisation: INR, en-IN formatting~~ (done, ADR-014)
 3. ~~Cart~~ (done, ADR-015): basket, name personalisation, delivery by pincode zone
 3a. ~~Admin 1: sign-in + product catalogue editing~~ (done, ADR-016; in-app admin, no external CMS)
+3b. ~~Admin 2: product photos, up to 8 per product, PDP gallery~~ (done, ADR-017)
 4. **Checkout** (next)
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
@@ -19,7 +20,7 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Brand tokens: colours and typography as Tailwind theme variables (light + dark), contrast-checked
 - [x] Logo/wordmark and favicon
 - [x] Placeholder product art per category
-- [ ] Real product photos (image field + Supabase Storage): admin phase 2
+- [x] Real product photos: Supabase Storage, up to 8 per product, PDP gallery (ADR-017)
 - [x] Mobile header: menu button with disclosure panel
 - [x] Light / Dark / Auto theme switch (header on desktop, menu on phones and tablets)
 - [x] Mobile filters: collapsible panel instead of the full filter row
@@ -49,7 +50,9 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Admin sign-in (Supabase Auth, `admin_users` + `is_admin()`, RLS write policies) (ADR-016)
 - [x] Product create / edit / publish / unpublish / archive / restore, prices in rupees, publish rule, optimistic concurrency (ADR-016)
 - [x] AI draft → "Save as draft product" (never published by the model) (ADR-016)
-- [ ] Phase 2: product images (Supabase Storage)
+- [x] Phase 2: product photos (ADR-017)
+- [ ] Orphaned photo cleanup job (storage files with no product_images row)
+- [ ] AI-suggested alt text for photos (a draft until an admin approves it)
 - [ ] Phase 3: categories (and their required attributes), stock, shipping zones
 - [ ] Featured flag (unblocks the home page "Featured" section)
 - [ ] Variants (colour/size)

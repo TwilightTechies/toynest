@@ -10,6 +10,7 @@ import type {
 import { z } from "zod";
 import type { SupabaseClient } from "./client";
 import { toRepositoryError } from "./errors";
+import { createSupabaseProductImageRepository } from "./product-image-repository";
 import {
   CART_COLUMNS,
   CATEGORY_COLUMNS,
@@ -188,5 +189,6 @@ export function createSupabaseRepositories(client: SupabaseClient) {
     orders: createSupabaseOrderRepository(client),
     carts: createSupabaseCartRepository(client),
     shippingZones: createSupabaseShippingZoneRepository(client),
+    images: createSupabaseProductImageRepository(client),
   };
 }
