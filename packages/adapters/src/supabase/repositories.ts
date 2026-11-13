@@ -65,7 +65,14 @@ export function createSupabaseProductRepository(client: SupabaseClient): Product
 export function createSupabaseCategoryRepository(client: SupabaseClient): CategoryRepository {
   return {
     async list() {
-      const result = await client.from("categories").select(CATEGORY_COLUMNS).order("name");
+      // The shop's list: shown categories only, in menu order (ADR-018). Admins use
+      // createSupabaseCategoryAdminRepository, which also sees hidden ones.
+      const result = await client
+        .from("categories")
+        .select(CATEGORY_COLUMNS)
+        .eq("visible", true)
+        .order("sort_order")
+        .order("name");
       if (result.error) throw toRepositoryError(result, "categories.list");
       return z.array(z.unknown()).parse(result.data).map(toCategory);
     },

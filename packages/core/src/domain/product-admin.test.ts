@@ -15,7 +15,7 @@ import {
 } from "./product-admin";
 import { createProductAdminService } from "./product-admin-service";
 
-const toys: Category = { id: randomUUID(), slug: "toys", name: "Toys", requiredAttributes: ["ageRange", "material"] };
+const toys: Category = { id: randomUUID(), slug: "toys", name: "Toys", requiredAttributes: ["ageRange", "material"], visible: true, sortOrder: 0, menuLabel: null };
 
 const completeInput = (overrides: Partial<ProductInput> = {}): ProductInput => ({
   name: "Wooden Rainbow Stacker",

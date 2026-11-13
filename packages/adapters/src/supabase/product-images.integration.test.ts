@@ -53,7 +53,9 @@ describe.skipIf(!ready)("Product photos (Storage + RLS)", () => {
     service = createSupabaseClient({ url: env!.SUPABASE_URL, key: env!.SUPABASE_SERVICE_ROLE_KEY, timeoutMs: 20000 });
     admin = await user("admin", true);
     plain = await user("plain", false);
-    const category = await service.from("categories").select("id").limit(1).single();
+    // A fixed, seeded, shown category: "the first row" could be another test's hidden category
+    // created at the same moment (test files run in parallel against one database).
+    const category = await service.from("categories").select("id").eq("slug", "small-toys").single();
     if (category.error) throw category.error;
     const product = await admin.products.create({
       name: `Image test ${run}`,

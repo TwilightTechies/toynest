@@ -15,6 +15,7 @@ const PAGE_SIZE = 20;
 const ListParamsSchema = z.object({
   q: z.string().trim().max(100).optional().catch(undefined),
   status: ProductStatusSchema.optional().catch(undefined),
+  category: z.uuid().optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(1000).catch(1),
 });
 
@@ -38,7 +39,7 @@ async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, 
   const { context } = await requireAdmin();
   const params = ListParamsSchema.parse(await searchParams);
   const [{ items, total }, categories] = await Promise.all([
-    context.products.list({ text: params.q, status: params.status, limit: PAGE_SIZE, offset: (params.page - 1) * PAGE_SIZE }),
+    context.products.list({ text: params.q, status: params.status, categoryId: params.category, limit: PAGE_SIZE, offset: (params.page - 1) * PAGE_SIZE }),
     context.categories.list(),
   ]);
   const categoryName = new Map(categories.map((category) => [category.id, category.name]));
@@ -47,6 +48,7 @@ async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, 
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
     if (params.status) query.set("status", params.status);
+    if (params.category) query.set("category", params.category);
     if (page > 1) query.set("page", String(page));
     const text = query.toString();
     return `/admin/products${text ? `?${text}` : ""}`;
@@ -71,6 +73,7 @@ async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, 
             ))}
           </select>
         </label>
+        {params.category && <input type="hidden" name="category" value={params.category} />}
         <button className={`${buttonClass("secondary")} min-h-11`}>Filter</button>
       </form>
 
