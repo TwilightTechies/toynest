@@ -6,7 +6,9 @@ import {
   SlugSchema,
   type CatalogParams,
   type Category,
+  smallImageWidth,
   type Product,
+  type ProductImage,
   type ProductSearchQuery,
 } from "@toynest/core";
 import { cacheTag } from "next/cache";
@@ -16,7 +18,20 @@ import { getRepositories, type DataSource } from "./data";
 // shoppers see an edit on their next request instead of when the cache expires (ADR-016).
 export const CATALOG_CACHE_TAG = "catalog";
 
+// A stored product photo, ready for <img srcset> (ADR-017).
+export interface CatalogPhoto {
+  alt: string;
+  large: string;
+  small: string;
+  // Intrinsic size of the large file, so the browser reserves space before it loads.
+  width: number;
+  height: number;
+  smallWidth: number;
+}
+
 export interface CatalogItem {
+  // The main photo (position 0). Absent = show the category placeholder art.
+  image?: CatalogPhoto;
   slug: string;
   name: string;
   description: string;
@@ -43,6 +58,8 @@ export interface CatalogPage {
 }
 
 export interface ProductDetail extends CatalogItem {
+  // Every photo in display order (the gallery); empty = placeholder art.
+  images: CatalogPhoto[];
   attributes: { label: string; value: string }[];
   // Needs a name to engrave before it can go in the basket (attributes.personalisation = "name").
   personalisable: boolean;
@@ -57,9 +74,27 @@ const labelFor = (key: string) => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-function toItem(product: Product, categoriesById: Map<string, Category>): CatalogItem {
+const toPhoto = (image: ProductImage): CatalogPhoto => ({
+  alt: image.alt,
+  large: image.urls.large,
+  small: image.urls.small,
+  width: image.width,
+  height: image.height,
+  smallWidth: smallImageWidth(image),
+});
+
+// One query for all the photos on a page or shelf, rather than one per product.
+async function photosFor(products: Product[]): Promise<Map<string, ProductImage[]>> {
+  if (products.length === 0) return new Map();
+  const { images } = await getRepositories();
+  return images.listForProducts(products.map((product) => product.id));
+}
+
+function toItem(product: Product, categoriesById: Map<string, Category>, photos?: Map<string, ProductImage[]>): CatalogItem {
   const category = categoriesById.get(product.categoryId);
+  const main = photos?.get(product.id)?.[0];
   return {
+    ...(main ? { image: toPhoto(main) } : {}),
     slug: product.slug,
     name: product.name,
     description: product.description,
@@ -104,13 +139,14 @@ export async function listCatalog(params: CatalogParams): Promise<CatalogPage> {
     offset: (params.page - 1) * CATALOG_PAGE_SIZE,
   };
   const { items, total } = await products.search(query);
+  const photos = await photosFor(items);
 
   return {
     source,
     params,
     category: summaries.find((summary) => summary.slug === category?.slug),
     categories: summaries,
-    items: items.map((product) => toItem(product, categoriesById)),
+    items: items.map((product) => toItem(product, categoriesById, photos)),
     total,
     pageCount: Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE)),
   };
@@ -129,8 +165,10 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
   if (!product || product.status !== "active") return null;
 
   const categoriesById = new Map((await categories.list()).map((category) => [category.id, category]));
+  const photos = await photosFor([product]);
   return {
-    ...toItem(product, categoriesById),
+    ...toItem(product, categoriesById, photos),
+    images: (photos.get(product.id) ?? []).map(toPhoto),
     attributes: Object.entries(product.attributes).map(([key, value]) =>
       key === "personalisation" && value === "name"
         ? { label: "Personalisation", value: "Engraved with a name (up to 20 characters)" }
@@ -158,9 +196,10 @@ export async function getHomeSections(): Promise<HomeSections> {
     products.search({ sort: "newest", limit: 4, offset: 0 }),
     products.search({ sort: "price-asc", maxPriceMinor: UNDER_PRICE_MINOR, limit: 4, offset: 0 }),
   ]);
+  const photos = await photosFor([...newest.items, ...cheap.items]);
   return {
     categories: summaries,
-    newArrivals: newest.items.map((product) => toItem(product, categoriesById)),
-    underTen: cheap.items.map((product) => toItem(product, categoriesById)),
+    newArrivals: newest.items.map((product) => toItem(product, categoriesById, photos)),
+    underTen: cheap.items.map((product) => toItem(product, categoriesById, photos)),
   };
 }

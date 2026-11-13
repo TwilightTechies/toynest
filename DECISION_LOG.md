@@ -182,3 +182,42 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - Public sign-up should be turned off in the Supabase dashboard until the customer-auth phase. Sign-ups can't gain admin rights, but there is no reason to allow them.
   - Checked with `next start`: 21/21 browser checks, including a signed-in **non-admin** posting the real Archive action past the proxy (refused by `requireAdmin`), plus 8 live adapter tests that prove the RLS layer on its own, the stale-version conflict and immediate revocation.
   - Next admin phases: images (Supabase Storage), categories, stock, shipping zones, then orders and a dashboard after checkout.
+
+## ADR-017 · Product photos: Supabase Storage, resized once at upload, up to 8 per product
+- **Date:** 13 Nov 2026 · **Status:** Accepted
+- **Context:** Admins couldn't add photos, so the shop showed placeholder art. The product page needs several photos. Photo hosting must stay within the Supabase free plan for now: 1 GB storage, 5 GB uncached plus 5 GB cached egress a month, and no Supabase image transformations.
+- **Decision:**
+  - **Where things live:**
+    - **Files go in Supabase Storage**, in a public bucket `product-images`. Not in the database, where files would eat the 0.5 GB limit and slow backups. Not on the server's disk, which hosts wipe on deploy and don't share between instances.
+    - **The database keeps only details** in `product_images`: product, storage path, alt text, position, width and height.
+  - **Resize once, at upload, with `sharp`** (0.35.5, behind a core `ImageProcessor` port):
+    - The file's real format decides (JPEG, PNG or WebP only), never its name or MIME header.
+    - EXIF rotation is applied and all metadata stripped, including GPS.
+    - Limits: at least 400 px on the short side, at most 40 MP decoded (protection against decompression bombs).
+    - Two WebP renditions: large (1600 px longest side, quality 80) and small (480 px).
+    - This avoids paid Supabase transformations and Next's image optimiser. The shop uses plain `<img srcset>` over the two files.
+  - **Immutable files** at `<productId>/<imageId>-large.webp` / `-small.webp`, served with `Cache-Control: max-age=31536000`, so repeat views count as cheaper cached egress. The bucket itself only accepts `image/webp` up to 2 MB.
+  - **Limits in the database, not only the app:**
+    - `position` has `check 0..7` and is unique per product (deferrable), which caps a product at 8 photos.
+    - `reorder_product_images()` (`security invoker`) rewrites positions in one statement and rejects a stale id list.
+    - Positions stay contiguous after deletes.
+  - **RLS:**
+    - Shoppers can read photo rows only for **active** products.
+    - Only admins (`is_admin()`) may write rows, or upload and delete objects in the bucket (policies on `storage.objects`).
+    - Admin photo writes use the user-scoped client from ADR-016.
+  - **Keeping Storage and the database consistent:**
+    - Upload writes the files, then the row, and deletes the files if the row fails.
+    - Delete removes the row first (the photo leaves the shop at once), then the files. A failed file delete is logged as an orphan.
+  - **Alt text is required.** It defaults to "<name>, photo N" and is editable per photo. Card images use `alt=""` because the card's link already names the product.
+  - **Upload size:** up to 5 MB per file, uploaded one file per server-action call (`serverActions.bodySizeLimit: "6mb"`). The client uploader shows progress; without JS, a plain form uploads one file.
+  - **Product page gallery:**
+    - A CSS scroll-snap track (swipe needs no JS), with `#photo-N` anchor thumbnails.
+    - A small client component makes the thumbnails scroll sideways only and sets `aria-current`.
+    - The first photo loads eagerly with high fetch priority. Products without photos keep the placeholder art.
+- **Alternatives:** Supabase image transformations (not on the free plan; per-image cost on paid plans); `next/image` (would re-optimise files that are already sized, which on a host counts against its quota); bytea in Postgres (database size, backups); signed upload URLs direct from the browser (no server-side format check before storage, and more client code); a single `image_url` column (only one photo).
+- **Consequences:**
+  - Size check, worst case: a detailed 4.6 MB, 12 MP image became 982 KB large plus 75 KB small. Typical product shots on plain backgrounds are much smaller. At ~200 KB per product page view, 5 GB of uncached egress is roughly 25,000 views a month before the CDN cache helps.
+  - Sample-data mode has no photos.
+  - Orphaned files need a cleanup job later.
+  - Free projects pause after a week of inactivity.
+  - Checked with `next start`: 16/16 browser checks (upload 3, alt edit, reorder, delete, an oversized and a fake file rejected, gallery thumbnails, product card) and 6 live adapter tests (Storage RLS, the database cap, public URL headers, compensation).

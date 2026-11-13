@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ProductImage } from "@/components/product-image";
+import { ProductGallery } from "@/components/product-gallery";
 import { AddToBasketForm } from "@/components/add-to-basket-form";
 import { Badge } from "@/components/ui";
 import { getProduct } from "@/lib/catalog";
@@ -49,11 +49,9 @@ async function Product({ params }: { params: Params }) {
         </ol>
       </nav>
 
-      {/* Phones: image, then details. Tablet and up: side by side. */}
+      {/* Phones: photos, then details. Tablet and up: side by side. */}
       <div className="mt-5 grid gap-8 md:grid-cols-2 md:gap-12">
-        <div className="self-start rounded-2xl border border-border bg-surface-raised p-3">
-          <ProductImage categorySlug={product.categorySlug} size="hero" />
-        </div>
+        <ProductGallery images={product.images} name={product.name} categorySlug={product.categorySlug} />
 
         <div>
           <Badge>{product.categoryName}</Badge>

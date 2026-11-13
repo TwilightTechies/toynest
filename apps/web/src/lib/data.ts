@@ -16,6 +16,7 @@ import type {
   Customer,
   CustomerRepository,
   OrderRepository,
+  ProductImageRepository,
   ProductRepository,
   ShippingZoneRepository,
 } from "@toynest/core";
@@ -31,6 +32,7 @@ export interface Repositories {
   orders: OrderRepository;
   carts: CartRepository;
   shippingZones: ShippingZoneRepository;
+  images: ProductImageRepository;
   // Demo-only list for the mock sign-in on /support.
   demoCustomers(): Promise<Customer[]>;
 }
@@ -69,6 +71,8 @@ async function loadSampleRepositories(): Promise<Repositories> {
     orders: support.orders,
     carts: createInMemoryCartRepository(),
     shippingZones: await loadShippingZones(path.join(dataDir, "shipping-zones.json")),
+    // Sample mode has no photos: every product shows its category placeholder (ADR-017).
+    images: { listForProducts: async () => new Map() },
     demoCustomers: async () => support.sampleCustomers,
   };
 }

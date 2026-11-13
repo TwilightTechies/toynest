@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
 import { ProductForm, StatusControls } from "../product-form";
 import { statusLabel, statusTone } from "../status";
+import { PhotosCard } from "./photos";
 
 export const metadata: Metadata = { title: "Edit product · ToyNest admin" };
 
@@ -26,8 +27,12 @@ export default function EditProductPage({ params, searchParams }: PageProps<"/ad
 async function EditProduct({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const { context } = await requireAdmin();
   const { id } = await params;
-  const { saved, status } = await searchParams;
-  const [product, categories] = await Promise.all([context.products.get(id), context.categories.list()]);
+  const { saved, status, photo, photoError } = await searchParams;
+  const [product, categories, photos] = await Promise.all([
+    context.products.get(id),
+    context.categories.list(),
+    context.productImages.list(id),
+  ]);
   if (!product) notFound();
 
   const notice =
@@ -70,6 +75,12 @@ async function EditProduct({ params, searchParams }: PageProps<"/admin/products/
             price: formatRupeesInput(product.priceMinor),
             attributes: product.attributes,
           }}
+        />
+        <PhotosCard
+          productId={product.id}
+          photos={photos}
+          notice={typeof photo === "string" ? photo : undefined}
+          error={typeof photoError === "string" ? photoError.slice(0, 300) : undefined}
         />
         <StatusControls key={`status-${product.version}`} id={product.id} version={product.version} status={product.status} />
       </div>

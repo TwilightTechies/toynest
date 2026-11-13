@@ -9,7 +9,8 @@
     "./sample-support": "./src/in-memory/sample-support.ts",
     "./sample-cart": "./src/in-memory/sample-cart.ts",
     "./anthropic": "./src/anthropic/anthropic-provider.ts",
-    "./supabase": "./src/supabase/index.ts"
+    "./supabase": "./src/supabase/index.ts",
+    "./images": "./src/images/sharp-image-processor.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -26,6 +27,7 @@
     "@supabase/supabase-js": "2.118.0",
     "@toynest/ai": "0.0.0",
     "@toynest/core": "0.0.0",
+    "sharp": "0.35.5",
     "zod": "4.6.7"
   },
   "devDependencies": {

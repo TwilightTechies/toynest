@@ -1,6 +1,13 @@
 import "server-only";
+import { createSharpImageProcessor } from "@toynest/adapters/images";
 import { createSupabaseAdminContext, readSupabaseEnv, type SupabaseAdminContext } from "@toynest/adapters/supabase";
-import { createProductAdminService, type AdminUser, type ProductAdminService } from "@toynest/core";
+import {
+  createProductAdminService,
+  createProductImageService,
+  type AdminUser,
+  type ProductAdminService,
+  type ProductImageService,
+} from "@toynest/core";
 import { connection } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -46,6 +53,7 @@ export interface AdminAccess {
   user: AdminUser;
   context: SupabaseAdminContext;
   catalogue: ProductAdminService;
+  photos: ProductImageService;
 }
 
 // Isolation layer 3: call this in EVERY admin page and server action, not only the layout. Layouts
@@ -58,5 +66,10 @@ export const requireAdmin = cache(async (): Promise<AdminAccess> => {
   const user = await context.session.currentUser();
   if (!user) redirect(LOGIN_PATH);
   if (!(await context.session.isAdmin())) redirect(`${LOGIN_PATH}?denied=1`);
-  return { user, context, catalogue: createProductAdminService(context.products, context.categories) };
+  return {
+    user,
+    context,
+    catalogue: createProductAdminService(context.products, context.categories),
+    photos: createProductImageService(context.productImages, context.products, createSharpImageProcessor()),
+  };
 });

@@ -57,10 +57,16 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
     const subject = async () => (s ??= await setup());
 
     describe("products", () => {
+      // A live catalogue can also hold products an admin added (ADR-016), so these checks look at the
+      // seeded products only: they must all be there, in the right order, and totals may be larger.
+      const seededSlugs = new Set(catalog.products.map((p) => p.slug));
+      const seededOnly = (items: { slug: string }[]) => items.map((p) => p.slug).filter((slug) => seededSlugs.has(slug));
+
       it("lists every active product, with the full total, when there is no search text", async () => {
         const { items, total } = await (await subject()).products.search({ limit: 100, offset: 0 });
-        expect(total).toBe(catalog.products.length);
-        expect(items.map((p) => p.slug).sort()).toEqual(catalog.products.map((p) => p.slug).sort());
+        expect(total).toBeGreaterThanOrEqual(catalog.products.length);
+        expect(total).toBe(items.length);
+        expect(seededOnly(items).sort()).toEqual(catalog.products.map((p) => p.slug).sort());
       });
 
       it('finds "wooden" products when searching for "wood"', async () => {
@@ -72,7 +78,8 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
         const { products } = await subject();
         const page = await products.search({ limit: 3, offset: 0 });
         expect(page.items).toHaveLength(3);
-        expect(page.total).toBe(catalog.products.length);
+        expect(page.total).toBe((await products.search({ limit: 100, offset: 0 })).total);
+        expect(page.total).toBeGreaterThanOrEqual(catalog.products.length);
       });
 
       it("filters by category", async () => {
@@ -80,7 +87,7 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
         const stationery = (await categories.list()).find((c) => c.slug === "stationery")!;
         const { items } = await products.search({ categoryId: stationery.id, limit: 20, offset: 0 });
         const expected = catalog.products.filter((p) => p.categorySlug === "stationery").map((p) => p.slug);
-        expect(items.map((p) => p.slug).sort()).toEqual(expected.sort());
+        expect(seededOnly(items).sort()).toEqual(expected.sort());
       });
 
       it("finds by slug, and returns null for an unknown slug", async () => {
@@ -109,7 +116,7 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
 
       it.each(Object.keys(expectedOrder) as (keyof typeof expectedOrder)[])("sorts by %s", async (sort) => {
         const { items } = await (await subject()).products.search({ sort, limit: 100, offset: 0 });
-        expect(items.map((p) => p.slug)).toEqual([...catalog.products].sort(expectedOrder[sort]).map((p) => p.slug));
+        expect(seededOnly(items)).toEqual([...catalog.products].sort(expectedOrder[sort]).map((p) => p.slug));
       });
 
       it("keeps the sort order across pages", async () => {
@@ -124,8 +131,9 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
         const { products } = await subject();
         const inRange = catalog.products.filter((p) => p.priceMinor >= 24900 && p.priceMinor <= 59900);
         const { items, total } = await products.search({ minPriceMinor: 24900, maxPriceMinor: 59900, limit: 100, offset: 0 });
-        expect(total).toBe(inRange.length);
-        expect(items.map((p) => p.slug).sort()).toEqual(inRange.map((p) => p.slug).sort());
+        expect(total).toBe(items.length);
+        expect(items.every((p) => p.priceMinor >= 24900 && p.priceMinor <= 59900)).toBe(true);
+        expect(seededOnly(items).sort()).toEqual(inRange.map((p) => p.slug).sort());
       });
 
       it("finds products by id, ignoring unknown ids", async () => {
@@ -227,7 +235,9 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
     describe("categories", () => {
       it("lists every category with its required attributes", async () => {
         const list = await (await subject()).categories.list();
-        expect(list).toHaveLength(catalog.categories.length);
+        // Seeded categories must all be there; an admin may have added more (e.g. a seasonal range).
+        const slugs = list.map((c) => c.slug);
+        expect(catalog.categories.every((c) => slugs.includes(c.slug))).toBe(true);
         expect(list.find((c) => c.slug === "stationery")?.requiredAttributes).toEqual(["material"]);
       });
     });

@@ -3,6 +3,7 @@ import type { AdminSession, AdminUser } from "@toynest/core";
 import { z } from "zod";
 import { toRepositoryError } from "./errors";
 import { createSupabaseProductAdminRepository } from "./product-admin-repository";
+import { createSupabaseProductImageAdminRepository } from "./product-image-repository";
 import { createSupabaseCategoryRepository } from "./repositories";
 
 export type { CookieOptions as SessionCookieOptions };
@@ -81,6 +82,7 @@ export function createSupabaseAdminContext({ url, anonKey, cookies, secureCookie
   return {
     session,
     products: createSupabaseProductAdminRepository(client),
+    productImages: createSupabaseProductImageAdminRepository(client),
     categories: createSupabaseCategoryRepository(client),
   };
 }
