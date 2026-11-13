@@ -9,6 +9,7 @@ One phase per project session, each on its own `feat/` branch:
 2. ~~Design foundation~~ (done, ADR-013)
 2a. ~~India localisation: INR, en-IN formatting~~ (done, ADR-014)
 3. ~~Cart~~ (done, ADR-015): basket, name personalisation, delivery by pincode zone
+3a. ~~Admin 1: sign-in + product catalogue editing~~ (done, ADR-016; in-app admin, no external CMS)
 4. **Checkout** (next)
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
@@ -18,7 +19,7 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Brand tokens: colours and typography as Tailwind theme variables (light + dark), contrast-checked
 - [x] Logo/wordmark and favicon
 - [x] Placeholder product art per category
-- [ ] Real product photos (image field + Supabase Storage): with admin product CRUD
+- [ ] Real product photos (image field + Supabase Storage): admin phase 2
 - [x] Mobile header: menu button with disclosure panel
 - [x] Light / Dark / Auto theme switch (header on desktop, menu on phones and tablets)
 - [x] Mobile filters: collapsible panel instead of the full filter row
@@ -32,7 +33,7 @@ One phase per project session, each on its own `feat/` branch:
 - [ ] Final responsive review of cart, checkout and account pages
 
 ## Storefront
-- [x] Home page sections: hero, shop by category, new arrivals, under £10 (ADR-012)
+- [x] Home page sections: hero, shop by category, new arrivals, under ₹500 (ADR-012, ADR-014)
 - [ ] Home page: featured and best sellers (needs a featured flag / order aggregate)
 - [x] Product detail page, category browsing, price filter, sorting, pagination (ADR-012)
 - [ ] Product variants (colour/size) selection UI
@@ -45,8 +46,15 @@ One phase per project session, each on its own `feat/` branch:
 - [ ] Customer account: registration, password recovery, profile, order history UI
 
 ## Admin
+- [x] Admin sign-in (Supabase Auth, `admin_users` + `is_admin()`, RLS write policies) (ADR-016)
+- [x] Product create / edit / publish / unpublish / archive / restore, prices in rupees, publish rule, optimistic concurrency (ADR-016)
+- [x] AI draft → "Save as draft product" (never published by the model) (ADR-016)
+- [ ] Phase 2: product images (Supabase Storage)
+- [ ] Phase 3: categories (and their required attributes), stock, shipping zones
+- [ ] Featured flag (unblocks the home page "Featured" section)
+- [ ] Variants (colour/size)
+- [ ] Audit trail: who changed what (created_by / updated_by or a change log)
 - [ ] Dashboard: counts, sales summary, low-stock, recent orders
-- [ ] Full product CRUD, archive, images, categories, variants, prices
 - [ ] Inventory management
 - [ ] Order management: status updates, payment tracking
 

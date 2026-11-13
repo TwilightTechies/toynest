@@ -15,12 +15,14 @@
     "typecheck": "tsc --noEmit",
     "demo:draft": "node --env-file-if-exists=../../.env.local --import tsx scripts/draft-demo.ts",
     "test": "vitest run",
-    "seed:supabase": "node --env-file-if-exists=../../.env.local --import tsx scripts/seed-supabase.ts"
+    "seed:supabase": "node --env-file-if-exists=../../.env.local --import tsx scripts/seed-supabase.ts",
+    "admin:create": "node --env-file-if-exists=../../.env.local --import tsx scripts/create-admin.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.3.316",
     "@anthropic-ai/sdk": "1.3.0",
     "@modelcontextprotocol/sdk": "1.32.2",
+    "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
     "@toynest/ai": "0.0.0",
     "@toynest/core": "0.0.0",

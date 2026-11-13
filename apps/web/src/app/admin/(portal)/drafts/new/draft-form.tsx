@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import type { ReviewFinding } from "@toynest/ai";
-import { runDraft, type DraftRunState } from "./actions";
+import type { ProductDraftOutcome, ReviewFinding } from "@toynest/ai";
+import { runDraft, saveDraftAsProduct, type DraftRunState } from "./actions";
 
 // Below this, a finding is routed for a second look rather than shown as settled.
 const LOW_CONFIDENCE = 0.7;
@@ -62,6 +62,7 @@ export function DraftForm() {
                 <h3 className="mt-3 text-lg font-semibold">{state.draft.draft.title}</h3>
                 <p className="mt-2 text-sm">{state.draft.draft.description}</p>
                 <p className="mt-3 text-xs text-zinc-500">Tags: {state.draft.draft.tags.join(", ")}</p>
+                <SaveAsProduct draft={state.draft} />
                 {state.draft.draft.missingInformation.length > 0 && (
                   <ul className="mt-3 space-y-1 text-sm">
                     {state.draft.draft.missingInformation.map((gap) => (
@@ -113,5 +114,22 @@ export function DraftForm() {
         </div>
       )}
     </>
+  );
+}
+
+// Creates a draft product from the writer's output. Publishing stays a separate, human step.
+function SaveAsProduct({ draft }: { draft: Extract<ProductDraftOutcome, { status: "needs_review" }> }) {
+  const [state, action, pending] = useActionState(saveDraftAsProduct, { error: null });
+  return (
+    <form action={action} className="mt-4">
+      <input type="hidden" name="draft" value={JSON.stringify(draft.draft)} />
+      <button
+        disabled={pending}
+        className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+      >
+        {pending ? "Saving…" : "Save as draft product"}
+      </button>
+      {state.error && <p className="mt-2 text-sm text-red-600">{state.error}</p>}
+    </form>
   );
 }
