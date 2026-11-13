@@ -9,7 +9,12 @@ import {
   type Product,
   type ProductSearchQuery,
 } from "@toynest/core";
+import { cacheTag } from "next/cache";
 import { getRepositories, type DataSource } from "./data";
+
+// Every cached catalogue read carries this tag; admin writes call updateTag(CATALOG_CACHE_TAG) so
+// shoppers see an edit on their next request instead of when the cache expires (ADR-016).
+export const CATALOG_CACHE_TAG = "catalog";
 
 export interface CatalogItem {
   slug: string;
@@ -82,6 +87,7 @@ async function summariseCategories(): Promise<{ categories: Category[]; summarie
 // whether the data comes from Supabase or the sample file.
 export async function listCatalog(params: CatalogParams): Promise<CatalogPage> {
   "use cache";
+  cacheTag(CATALOG_CACHE_TAG);
   const { source, products } = await getRepositories();
   const { categories, summaries } = await summariseCategories();
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
@@ -112,6 +118,7 @@ export async function listCatalog(params: CatalogParams): Promise<CatalogPage> {
 
 export async function getProduct(slug: string): Promise<ProductDetail | null> {
   "use cache";
+  cacheTag(CATALOG_CACHE_TAG);
   // The slug comes from the URL: reject anything that isn't a slug before it reaches a query.
   if (!SlugSchema.safeParse(slug).success) return null;
   const { products, categories } = await getRepositories();
@@ -143,6 +150,7 @@ export const UNDER_PRICE_MINOR = 50000; // ₹500
 
 export async function getHomeSections(): Promise<HomeSections> {
   "use cache";
+  cacheTag(CATALOG_CACHE_TAG);
   const { products } = await getRepositories();
   const { categories, summaries } = await summariseCategories();
   const categoriesById = new Map(categories.map((category) => [category.id, category]));

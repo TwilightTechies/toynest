@@ -1,10 +1,12 @@
 import {
+  AdminProductSchema,
   CartSchema,
   CategorySchema,
   CustomerSchema,
   OrderSchema,
   ProductSchema,
   ShippingZoneSchema,
+  type AdminProduct,
   type Cart,
   type Category,
   type Customer,
@@ -53,6 +55,14 @@ export function toProduct(row: unknown): Product {
     attributes: r.attributes,
     createdAt: toIsoUtc(r.created_at),
   });
+}
+
+// Admin view: the same row plus updated_at, kept verbatim as the optimistic-concurrency version.
+export const ADMIN_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS}, updated_at`;
+
+export function toAdminProduct(row: unknown): AdminProduct {
+  const updatedAt = z.object({ updated_at: z.string().min(1) }).parse(row).updated_at;
+  return AdminProductSchema.parse({ ...toProduct(row), version: updatedAt, updatedAt: toIsoUtc(updatedAt) });
 }
 
 export const CATEGORY_COLUMNS = "id, slug, name, required_attributes";

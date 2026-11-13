@@ -10,9 +10,8 @@ export default async function DraftsPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-12">
-      {/* No auth yet: this page must not be deployed until admin login exists. */}
       <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-        Local development only · no admin login yet · example draft, not a live model call
+        Example draft, not a live model call
       </p>
 
       <div className="mt-8 flex flex-wrap items-center gap-3">

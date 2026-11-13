@@ -154,3 +154,31 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - Zones are edited in the database until an admin UI exists.
   - The auth phase must add an owner policy on carts, set `customer_id`, and merge the guest cart on sign-in.
   - In `next dev`, Next aborts the fetches of a discarded validation render. The logged "database unavailable" lines come from that, not from the production server (checked with `next start`: 20/20 browser checks, no errors).
+
+## ADR-016 · In-app admin: Supabase Auth sign-in, admin role in the database, product catalogue editing
+- **Date:** 13 Nov 2026 · **Status:** Accepted
+- **Context:** The catalogue could only change through seed files, and `/admin` had no login. Products are commerce data (paise prices, draft → active → archived, AI drafts that need human approval, RLS), not editorial content.
+- **Decision:**
+  - **No external CMS.** The admin is part of the Next.js app and writes through `core`. A CMS (Payload, Strapi, Directus) would either keep a second copy of products or write to Postgres around the domain rules. A CMS may still be added later for editorial pages (banners, guides) only.
+  - **Supabase Auth with email and password.** `@supabase/ssr` keeps the session in cookies, and the adapter forces them to be `httpOnly`, `SameSite=Lax` and `Secure` in production. The vendor SDK stays in `packages/adapters`: the web app passes in a cookie jar (`getAll`/`setAll`).
+  - **The admin role is a table (`admin_users`) plus `public.is_admin()`** (`security definer`, `search_path = ''`, executable by `authenticated` only). This was chosen over a JWT `app_metadata` claim so that removing a row revokes access on the next request, not when the token next refreshes. Only the service role writes the table, through `npm run admin:create -w @toynest/adapters -- <email>` (the password is typed with hidden input, never passed as an argument).
+  - **Two independent checks:**
+    - *Layer 3:* `requireAdmin()` runs in the admin layout **and** in every admin page and server action. A layout check alone isn't enough, because pages render in parallel with it and a server action is a public POST endpoint.
+    - *Layer 4:* admin reads and writes use a **user-scoped client** (anon key plus the admin's JWT), and RLS policies `using/with check (public.is_admin())` refuse them for anyone else. There is no delete policy: products are archived, never deleted, because cart and order lines reference them.
+    - `proxy.ts` (Next 16's middleware) only refreshes the session and redirects signed-out visitors. It is not a security check.
+  - **A separate write port, `ProductAdminRepository`.** `ProductRepository` stays read-only for the storefront.
+  - **`createProductAdminService` in core holds the rules:**
+    - New products, including ones saved from an AI draft, start as **drafts**.
+    - **Publishing** needs a price above ₹0 and every `requiredAttributes` key of the category, and a live product can't be edited into breaking that rule.
+    - Status moves are fixed: publish, unpublish, archive, and restore (which returns the product to draft).
+    - Expected failures (`invalid`, `conflict`, `slug_taken`, `not_found`) are returned as values, so the form can show each one.
+  - **Optimistic concurrency.** The form carries the row's `updated_at` **exactly as Postgres returned it** (an opaque version token: a JS `Date` keeps milliseconds, Postgres microseconds), and the update matches `id` **and** `updated_at`. Zero rows means someone saved in between, so the admin sees a conflict and nothing is overwritten.
+  - **Prices are typed in rupees** and parsed with integer arithmetic (`parseRupees`: commas allowed, at most 2 decimals, up to ₹10,00,000), then stored in paise.
+  - **Shoppers see edits immediately.** Cached catalogue reads carry `cacheTag("catalog")`, and each admin write calls `updateTag("catalog")`.
+- **Alternatives:** Payload CMS (best Next.js fit, but it owns its own schema and migrations); Directus (an instant admin over Postgres, but a separate service whose writes skip the domain rules); Refine or React-admin with the Supabase browser client (would put a vendor SDK in client components); a shared admin password in an env var (no identity, no revocation, no audit); a JWT role claim (revocation is delayed by up to the token's lifetime); the service role for admin writes with only an app check (one missed check would be a full bypass).
+- **Consequences:**
+  - The admin needs Supabase with `SUPABASE_ANON_KEY`; in sample-data mode it isn't available.
+  - Seeded categories require attributes the seeded products don't have yet (Educational toys: `learningFocus`; Personalised toys: `personalisationOptions`), so editing those live products asks for them first.
+  - Public sign-up should be turned off in the Supabase dashboard until the customer-auth phase. Sign-ups can't gain admin rights, but there is no reason to allow them.
+  - Checked with `next start`: 21/21 browser checks, including a signed-in **non-admin** posting the real Archive action past the proxy (refused by `requireAdmin`), plus 8 live adapter tests that prove the RLS layer on its own, the stale-version conflict and immediate revocation.
+  - Next admin phases: images (Supabase Storage), categories, stock, shipping zones, then orders and a dashboard after checkout.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/admin";
 import { withToyNestMcp } from "@/lib/mcp";
 
 export const metadata: Metadata = { title: "MCP explorer · ToyNest admin" };
@@ -30,7 +31,7 @@ export default function McpExplorerPage({ searchParams }: PageProps<"/admin/mcp"
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-12">
       <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-        Local development only · no admin login yet · read-only tools
+        Read-only tools
       </p>
       <h1 className="mt-8 text-2xl font-semibold tracking-tight">MCP explorer</h1>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
@@ -45,6 +46,8 @@ export default function McpExplorerPage({ searchParams }: PageProps<"/admin/mcp"
 }
 
 async function Explorer({ searchParams }: Pick<PageProps<"/admin/mcp">, "searchParams">) {
+  // Checked here too: the page renders in parallel with the layout's check (lib/admin.ts).
+  await requireAdmin();
   const query = QuerySchema.safeParse(await searchParams);
   const selected = query.success ? query.data : {};
   let parsedArgs: Record<string, unknown> | undefined;
