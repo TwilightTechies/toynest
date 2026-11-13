@@ -11,8 +11,11 @@ const categoryList: Category[] = [
     slug: "educational-toys",
     name: "Educational toys",
     requiredAttributes: ["ageRange", "material", "learningFocus"],
+    visible: true,
+    sortOrder: 0,
+    menuLabel: null,
   },
-  { id: "5b0c6a0e-0f4e-4d2a-9a51-1c3d5e7f9a02", slug: "stationery", name: "Stationery", requiredAttributes: ["material"] },
+  { id: "5b0c6a0e-0f4e-4d2a-9a51-1c3d5e7f9a02", slug: "stationery", name: "Stationery", requiredAttributes: ["material"], visible: true, sortOrder: 1, menuLabel: null },
 ];
 
 const productList: Product[] = [

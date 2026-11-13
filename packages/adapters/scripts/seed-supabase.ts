@@ -46,6 +46,8 @@ async function main() {
   const categoryIds = await upsert(
     client,
     "categories",
+    // visible, sort_order and menu_label are left out on purpose: re-seeding keeps an admin's
+    // show/hide, order and labels (ADR-018). New rows get the migration's defaults.
     catalog.categories.map((c) => ({ slug: c.slug, name: c.name, required_attributes: c.requiredAttributes })),
     "slug",
   );

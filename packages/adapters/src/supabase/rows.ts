@@ -65,18 +65,29 @@ export function toAdminProduct(row: unknown): AdminProduct {
   return AdminProductSchema.parse({ ...toProduct(row), version: updatedAt, updatedAt: toIsoUtc(updatedAt) });
 }
 
-export const CATEGORY_COLUMNS = "id, slug, name, required_attributes";
+export const CATEGORY_COLUMNS = "id, slug, name, required_attributes, visible, sort_order, menu_label";
 
-const CategoryRowSchema = z.object({
+export const CategoryRowSchema = z.object({
   id: z.string(),
   slug: z.string(),
   name: z.string(),
   required_attributes: z.array(z.string()),
+  visible: z.boolean(),
+  sort_order: z.number().int(),
+  menu_label: z.string().nullable(),
 });
 
 export function toCategory(row: unknown): Category {
   const r = CategoryRowSchema.parse(row);
-  return CategorySchema.parse({ id: r.id, slug: r.slug, name: r.name, requiredAttributes: r.required_attributes });
+  return CategorySchema.parse({
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    requiredAttributes: r.required_attributes,
+    visible: r.visible,
+    sortOrder: r.sort_order,
+    menuLabel: r.menu_label,
+  });
 }
 
 export const CUSTOMER_COLUMNS = "id, name, email";

@@ -1,28 +1,23 @@
 import Link from "next/link";
+import { getMenuCategories } from "@/lib/catalog";
 import { BasketLink } from "./basket-link";
 import { Logo } from "./logo";
 import { MobileMenu, type NavLink } from "./mobile-menu";
 import { ThemeToggle } from "./theme-toggle";
 
-// Category links are fixed here rather than loaded, so the header stays static (no data fetch on
-// every page). If categories become admin-editable, load them from CategoryRepository instead.
-const navLinks: NavLink[] = [
-  { href: "/products", label: "Shop all" },
-  { href: "/products?category=educational-toys", label: "Educational" },
-  { href: "/products?category=personalised-toys", label: "Personalised" },
-  { href: "/products?category=small-toys", label: "Small toys" },
-  { href: "/products?category=stationery", label: "Stationery" },
-];
-
-export function SiteHeader() {
+// Category links come from the database (shown categories, in admin order: ADR-018), through a cached
+// read, so the header is still part of the static shell.
+export async function SiteHeader() {
+  const navLinks: NavLink[] = [{ href: "/products", label: "Shop all" }, ...(await getMenuCategories())];
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center gap-6 px-4">
         <Logo />
-        {/* Desktop (lg+): inline links and theme switch. Phones and tablets: the menu button below. */}
-        <nav aria-label="Main" className="ml-auto hidden items-center gap-1 text-sm font-semibold lg:flex">
+        {/* Wide screens (xl+): inline links and theme switch. Below that, the menu button. xl rather than lg
+            because admins can add categories (ADR-018), and seven links no longer fit at 1024 px. */}
+        <nav aria-label="Main" className="ml-auto hidden items-center gap-1 text-sm font-semibold xl:flex">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="rounded-full px-3 py-2 hover:bg-surface hover:text-accent">
+            <Link key={link.href} href={link.href} className="whitespace-nowrap rounded-full px-3 py-2 hover:bg-surface hover:text-accent">
               {link.label}
             </Link>
           ))}
@@ -34,7 +29,7 @@ export function SiteHeader() {
           </div>
         </nav>
         {/* Basket: always visible, on every screen size. ml-auto pushes it right when the nav is hidden. */}
-        <div className="ml-auto flex items-center gap-1 lg:ml-0">
+        <div className="ml-auto flex items-center gap-1 xl:ml-0">
           <BasketLink />
           <MobileMenu links={[...navLinks, { href: "/support", label: "Help & support" }]} />
         </div>

@@ -3,6 +3,7 @@ import {
   CATALOG_PAGE_SIZE,
   formatMoney,
   isPersonalisable,
+  menuLabelOf,
   SlugSchema,
   type CatalogParams,
   type Category,
@@ -74,7 +75,7 @@ const labelFor = (key: string) => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-const toPhoto = (image: ProductImage): CatalogPhoto => ({
+export const toPhoto = (image: ProductImage): CatalogPhoto => ({
   alt: image.alt,
   large: image.urls.large,
   small: image.urls.small,
@@ -165,6 +166,8 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
   if (!product || product.status !== "active") return null;
 
   const categoriesById = new Map((await categories.list()).map((category) => [category.id, category]));
+  // The shop's category list holds shown categories only: a product in a hidden one is not for sale.
+  if (!categoriesById.has(product.categoryId)) return null;
   const photos = await photosFor([product]);
   return {
     ...toItem(product, categoriesById, photos),
@@ -202,4 +205,16 @@ export async function getHomeSections(): Promise<HomeSections> {
     newArrivals: newest.items.map((product) => toItem(product, categoriesById, photos)),
     underTen: cheap.items.map((product) => toItem(product, categoriesById, photos)),
   };
+}
+
+// Header menu (ADR-018): shown categories in their admin-set order. Cached and tagged like the rest
+// of the catalogue, so the header stays in the static shell and an admin edit refreshes it.
+export async function getMenuCategories(): Promise<{ href: string; label: string }[]> {
+  "use cache";
+  cacheTag(CATALOG_CACHE_TAG);
+  const { categories } = await getRepositories();
+  return (await categories.list()).map((category) => ({
+    href: `/products?category=${category.slug}`,
+    label: menuLabelOf(category),
+  }));
 }

@@ -56,8 +56,16 @@ describe("toProduct", () => {
 
 describe("toCategory", () => {
   it("maps required_attributes", () => {
-    const category = toCategory({ id: productRow.category_id, slug: "stationery", name: "Stationery", required_attributes: ["material"] });
-    expect(category.requiredAttributes).toEqual(["material"]);
+    const category = toCategory({
+      id: productRow.category_id,
+      slug: "stationery",
+      name: "Stationery",
+      required_attributes: ["material"],
+      visible: false,
+      sort_order: 3,
+      menu_label: "Pens",
+    });
+    expect(category).toMatchObject({ requiredAttributes: ["material"], visible: false, sortOrder: 3, menuLabel: "Pens" });
   });
 });
 

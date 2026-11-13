@@ -6,6 +6,7 @@ import { signOut } from "../actions";
 
 const links = [
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/categories", label: "Categories" },
   { href: "/admin/drafts/new", label: "AI drafts" },
   { href: "/admin/mcp", label: "MCP explorer" },
 ];
