@@ -66,3 +66,10 @@ export function priceCart({
     totalMinor: subtotalMinor + (deliveryMinor ?? 0),
   };
 }
+
+// For sale right now means active AND in a shown category (ADR-018). A product in a hidden category is
+// priced like an archived one ("unavailable", left out of totals) but keeps its name, so the shopper
+// can still see which line it was. `shownCategoryIds` comes from the shop's category list.
+export function markNotForSale(products: Product[], shownCategoryIds: ReadonlySet<string>): Product[] {
+  return products.map((product) => (shownCategoryIds.has(product.categoryId) ? product : { ...product, status: "archived" as const }));
+}

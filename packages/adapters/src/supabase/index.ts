@@ -4,3 +4,5 @@ export * from "./repositories";
 export * from "./admin-session";
 export * from "./product-admin-repository";
 export * from "./product-image-repository";
+export * from "./category-admin-repository";
+export * from "./checkout-repository";

@@ -82,7 +82,9 @@ describe.skipIf(!ready)("RLS (isolation layer 4)", () => {
     a = await createUser("a");
     b = await createUser("b");
 
-    const category = await admin.from("categories").select("id").limit(1).single();
+    // A fixed, seeded, shown category: "the first row" could be another test's hidden category
+    // created at the same moment (test files run in parallel against one database).
+    const category = await admin.from("categories").select("id").eq("slug", "small-toys").single();
     if (category.error) throw new Error(`Run the seed first (${category.error.message})`);
     const draft = await admin
       .from("products")

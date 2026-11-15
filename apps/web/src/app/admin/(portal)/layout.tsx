@@ -2,12 +2,15 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { buttonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
+import { mcpExplorerEnabled } from "@/lib/features";
 import { signOut } from "../actions";
 
 const links = [
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/categories", label: "Categories" },
+  { href: "/admin/orders", label: "Orders" },
   { href: "/admin/drafts/new", label: "AI drafts" },
-  { href: "/admin/mcp", label: "MCP explorer" },
+  ...(mcpExplorerEnabled ? [{ href: "/admin/mcp", label: "MCP explorer" }] : []),
 ];
 
 // Every page under (portal) needs a signed-in admin. The login page sits outside this group, so it

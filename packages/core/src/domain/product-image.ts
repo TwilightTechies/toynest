@@ -3,8 +3,10 @@ import { z } from "zod";
 // Product photos (ADR-017). Files live in object storage; the database keeps these details only.
 
 export const MAX_IMAGES_PER_PRODUCT = 8;
-// Limit on what an admin may upload. Stored files are far smaller (resized WebP).
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+// Limit on what reaches the server per photo. Vercel caps any request body at 4.5 MB on every plan,
+// so 4 MB leaves room for the form overhead; the admin uploader shrinks bigger photos in the browser
+// first (ADR-020). Stored files are far smaller (resized WebP).
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 // Shortest side, in pixels, after EXIF rotation. Smaller photos look blurry on the product page.
 export const MIN_IMAGE_EDGE = 400;
 // Longest side of the two stored renditions.

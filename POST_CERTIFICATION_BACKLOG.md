@@ -11,7 +11,8 @@ One phase per project session, each on its own `feat/` branch:
 3. ~~Cart~~ (done, ADR-015): basket, name personalisation, delivery by pincode zone
 3a. ~~Admin 1: sign-in + product catalogue editing~~ (done, ADR-016; in-app admin, no external CMS)
 3b. ~~Admin 2: product photos, up to 8 per product, PDP gallery~~ (done, ADR-017)
-4. **Checkout** (next)
+3c. ~~Admin 3: categories: create/edit, show/hide (seasonal), menu order and labels~~ (done, ADR-018)
+4. ~~Checkout~~ (done, ADR-019): guest orders, mock online payment + Cash on Delivery
 5. Auth: switches the composition root to user-scoped clients
 6. **Design polish**: details across every page once all flows exist
 
@@ -42,8 +43,11 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Cart: add/remove, quantities, personalisation (name text), subtotal and delivery by pincode zone (shipping_zones table), total (ADR-015)
 - [ ] Expire abandoned guest carts (scheduled job on carts.updated_at)
 - [ ] Admin UI for shipping zones (fees, thresholds, pincode prefixes)
-- [ ] Checkout: customer details, shipping address, order summary
-- [ ] MockPaymentProvider: success / failure / pending
+- [x] Checkout: customer details, shipping address, order summary (ADR-019)
+- [x] MockPaymentProvider: success / failure / pending, plus Cash on Delivery (ADR-019)
+- [ ] Real payment gateway (e.g. Razorpay) behind the PaymentProvider port, with webhooks
+- [ ] Order confirmation emails (needs the notification provider)
+- [ ] Clean up orders left in awaiting_payment (scheduled job)
 - [ ] Customer account: registration, password recovery, profile, order history UI
 
 ## Admin
@@ -53,19 +57,24 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Phase 2: product photos (ADR-017)
 - [ ] Orphaned photo cleanup job (storage files with no product_images row)
 - [ ] AI-suggested alt text for photos (a draft until an admin approves it)
-- [ ] Phase 3: categories (and their required attributes), stock, shipping zones
+- [x] Phase 3: categories: show/hide, order, menu labels, required details (ADR-018)
+- [ ] Category schedule (show from / hide after a date) for seasonal ranges
+- [ ] Stock and shipping zones
 - [ ] Featured flag (unblocks the home page "Featured" section)
 - [ ] Variants (colour/size)
 - [ ] Audit trail: who changed what (created_by / updated_by or a change log)
 - [ ] Dashboard: counts, sales summary, low-stock, recent orders
 - [ ] Inventory management
-- [ ] Order management: status updates, payment tracking
+- [x] Read-only order list (ADR-019)
+- [ ] Order management: status updates, dispatch, payment tracking
 
 ## Platform
 - [ ] Rate limiting
 - [ ] Notification provider
 - [ ] Playwright E2E suite
-- [ ] Vercel deployment hardening
+- [x] Vercel deployment readiness: upload size, MCP explorer, bundled data, Node pin (ADR-020, docs/DEPLOYMENT.md)
+- [ ] Separate Supabase project for preview deployments
+- [ ] Daily keep-alive or monitoring so Supabase Free doesn't pause
 
 ## Original backlog (from brief)
 - [ ] Real payment gateway

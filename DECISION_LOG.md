@@ -221,3 +221,77 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - Orphaned files need a cleanup job later.
   - Free projects pause after a week of inactivity.
   - Checked with `next start`: 16/16 browser checks (upload 3, alt edit, reorder, delete, an oversized and a fake file rejected, gallery thumbnails, product card) and 6 live adapter tests (Storage RLS, the database cap, public URL headers, compensation).
+
+## ADR-018 · Category management: show/hide (seasonal ranges), menu order and labels, admin-only writes
+- **Date:** 13 Nov 2026 · **Status:** Accepted
+- **Context:** The shop is adding Christmas decorations. A category could only be added with SQL, the header menu was hard-coded, and hiding a seasonal range meant archiving each product.
+- **Decision:**
+  - **New columns on `categories`:** `visible` (Show in shop), `sort_order` and `menu_label` (a short header label). Existing rows were numbered in the order they were added, and the seeded categories keep their old short labels ("Educational", "Personalised").
+  - **A hidden category hides its products everywhere in the shop without changing their status**, so a range can be switched off in January and on again in November:
+    - `search_products` joins visible categories (listing, search, filters, home);
+    - the shop's `CategoryRepository.list()` returns shown categories only, so the product page returns "not found";
+    - the basket marks those lines "no longer available", keeps their names and leaves them out of the total;
+    - add-to-basket refuses them;
+    - public RLS on `categories` and `products` (and therefore `product_images`) requires `visible`, as defence in depth.
+  - **A separate `CategoryAdminRepository`** (user-scoped client) sees hidden categories, so products can be prepared before launch. `ProductAdminService` receives it, because its `list()` has the same shape.
+  - **New categories start hidden and go last.** The slug is fixed after creation, because it's in shop URLs. Required details are typed as labels and stored as keys ("Learning focus" → `learningFocus`), with at most 10. Adding a required detail never unpublishes anything; the category page lists how many live products are missing it.
+  - **Delete only an empty category.** The foreign key refuses otherwise, and the UI suggests hiding it.
+  - **Optimistic concurrency** on the raw `updated_at`, as in ADR-016.
+  - **The header menu comes from the database** (`getMenuCategories`: `"use cache"` + the `catalog` tag), so it stays in the static shell and updates after an admin edit. Because the number of links now varies, the inline menu starts at `xl` (1280 px) instead of `lg`, with `whitespace-nowrap`; below that, the menu button is used.
+  - The AI draft tools and MCP `get_categories` use the shop port, so hidden categories aren't offered to the model.
+- **Alternatives:** Archiving each seasonal product (loses which ones were live, and it's slow); a `starts_at`/`ends_at` schedule (useful later, but more than a switch is needed now); a hard-coded menu (needs a deploy for each new category); editable slugs (break links, and would need redirects).
+- **Consequences:**
+  - The Supabase contract tests now check seeded data only, so admin-added products and categories don't break them.
+  - The seed script leaves `visible`, `sort_order` and `menu_label` alone, so re-seeding keeps admin choices.
+  - A shown category with no live products gives an empty listing; hide it until products are ready.
+  - Checked with `next start`: 15/15 browser checks (create hidden → show → menu, product page and basket → reorder → hide → basket unavailable → stale version → delete refused, then allowed), and 5 live adapter tests.
+
+## ADR-019 · Checkout: guest orders with frozen prices, mock online payment and Cash on Delivery
+- **Date:** 13 Nov 2026 · **Status:** Accepted
+- **Context:** Baskets couldn't become orders. The shop needs a delivery address, a payment step and a record of what was bought at what price. No real money moves yet; customer accounts come in the auth phase.
+- **Decision:**
+  - **Guest checkout.** `orders.customer_id` becomes nullable. A guest order stores the contact details (name, email, Indian mobile normalised to 10 digits) and the address (state or UT from a fixed list of 36, pincode). A check requires either a customer or those guest details.
+  - **Prices are frozen and computed on the server only.** Checkout re-reads the basket and current products and prices them with core `priceCart`, the only pricing function. It stores each line's unit price, name, slug and personalisation, plus the subtotal, delivery, total and zone name. No price is read from the form: a forged `price` field is ignored. A database check makes the total equal subtotal plus delivery. If any line is unavailable (archived, or in a hidden category via the shared core `markNotForSale`), the shopper goes back to the basket.
+  - **Atomic order creation.** `place_order(payload)` writes the order and its lines in one transaction and numbers it from `order_number_seq`, which starts at **TN-20001**. The order-number format widens to `TN-` plus 4–8 digits in the database, the domain, the adapters and the support tool. Only the service role may execute it.
+  - **Idempotency:**
+    - Each checkout page view carries a random token, and `orders.checkout_token` is unique. A double submit, or two simultaneous requests, gives one order: the function catches the unique violation and returns the winner's id.
+    - A partial unique index allows only one open payment attempt per order (`started` / `pending`).
+    - Paying an order that is already paid doesn't charge again.
+    - Payment moves are conditional on the current `payment_status`, so a late "failed" can't undo a payment that succeeded.
+  - **Payment:**
+    - A `PaymentProvider` port with a stateless `MockPaymentProvider`; the outcome and time are encoded in the reference. A labelled test panel picks success, decline or "bank pending", and pending settles on a status check at least 5 seconds later.
+    - Every attempt is recorded in `payments` (server-only; admins can read it).
+    - **Cash on Delivery** up to ₹10,000 (`COD_MAX_MINOR`): the order is placed at once as `cod_due`.
+    - A failed online payment keeps the basket and offers Try again or Pay on delivery instead.
+    - The basket and its cookie are cleared once an order is settled.
+  - **New statuses:** `awaiting_payment` on orders, plus `payment_status` (pending, paid, failed, cod_due).
+  - **The confirmation page uses the order's random uuid** (a capability URL until accounts exist). Guest orders and payments are invisible to the public RLS roles.
+  - **Read-only `/admin/orders`** through admin RLS `select` policies, with an index on `placed_at`.
+- **Alternatives:** Creating a customer row per guest email (anyone typing someone else's email would attach orders to that person's record); pricing in SQL (a second pricing implementation to keep in step); one order row per payment attempt (duplicate orders); a real gateway now (keys, webhooks and a merchant account, which belong to a later phase behind the same port).
+- **Consequences:**
+  - Orders left in `awaiting_payment` need a cleanup job.
+  - Order emails need the notification provider.
+  - Admins can't change status yet.
+  - The auth phase must link guest orders to accounts, for example by verified email.
+  - The `20261113150000_add_checkout_orders` migration bundles several closely linked changes. It was applied before the project's "one concern per migration" rule was in place, so it's left as is rather than rewriting migration history. Later migrations follow the rule (e.g. the separate `orders_placed_at` index).
+  - Checked with `next start`: 17/17 browser checks, run twice (validation, COD, online success, decline then retry, pending then check status, double submit, COD limit, unavailable item, forged price, admin list), and 6 live adapter tests (atomic and idempotent under concurrency, numbering, a total that doesn't add up, one open attempt, conditional moves, RLS).
+
+## ADR-020 · Hosting on Vercel (Hobby) with Supabase
+- **Date:** 15 Nov 2026 · **Status:** Accepted
+- **Context:** The user wants ToyNest online. Vercel is the natural host for Next.js and offers a free Hobby plan. A few things in the code only worked on a developer's machine.
+- **Decision:**
+  - **Vercel Hobby with Supabase Free** while ToyNest is a learning project. Hobby is personal and non-commercial only, so selling for real means moving to Pro. The steps are in `docs/DEPLOYMENT.md`.
+  - **Photo uploads fit Vercel's 4.5 MB request-body limit,** which applies on every plan:
+    - the server limit (`MAX_UPLOAD_BYTES`) drops to 4 MB, with a `serverActions` body limit of 4.5 MB;
+    - the admin uploader shrinks photos over 1.5 MB in the browser before sending them (canvas, longest side 2400 px, JPEG quality 0.9). `createImageBitmap` applies EXIF orientation. The server still checks the real format and makes the 1600 px and 480 px WebP renditions (ADR-017), so nothing visible is lost.
+    - Checked with an 8.8 MB, 12 MP photo, which uploaded fine.
+  - **The MCP explorer is turned off when `VERCEL=1`.** It starts `apps/mcp-server` as a child process over stdio, which serverless functions can't do. It still works locally, including under `next start`.
+  - **The AI-draft sample is imported as JSON** (bundled at build time) instead of read from `data/` when a page loads.
+  - **Node is pinned with `engines: "24.x"`,** matching `.nvmrc`, so Vercel can't pick a different major version.
+- **Alternatives:** Direct browser-to-Supabase-Storage uploads with signed URLs (no body limit, but the server's format check and resize would have to run after the fact); Vercel Blob (a second storage service next to Supabase); a VPS or Docker host (more to operate); Netlify or Render (similar trade-offs; Vercel matches Next.js best).
+- **Consequences:**
+  - Previews and production share one Supabase project.
+  - Supabase Free pauses after 7 quiet days.
+  - Without JS, the plain upload form can't shrink photos, so photos over 4 MB fail there.
+  - Sample-data mode is local-only.
+  - The `VERCEL=1` switch and the bundled JSON were checked by building locally; the first real Vercel deploy is the final test.

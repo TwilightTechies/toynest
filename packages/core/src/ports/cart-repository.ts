@@ -13,4 +13,6 @@ export interface CartRepository {
   setQuantity(cartId: string, lineId: string, quantity: number): Promise<boolean>;
   removeLine(cartId: string, lineId: string): Promise<boolean>;
   setPincode(cartId: string, pincode: string | null): Promise<void>;
+  // After a successful order (ADR-019). Deleting an unknown cart is not an error.
+  delete(cartId: string): Promise<void>;
 }

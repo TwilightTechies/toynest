@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin";
+import { mcpExplorerEnabled } from "@/lib/features";
 import { withToyNestMcp } from "@/lib/mcp";
 
 export const metadata: Metadata = { title: "MCP explorer · ToyNest admin" };
@@ -48,6 +49,14 @@ export default function McpExplorerPage({ searchParams }: PageProps<"/admin/mcp"
 async function Explorer({ searchParams }: Pick<PageProps<"/admin/mcp">, "searchParams">) {
   // Checked here too: the page renders in parallel with the layout's check (lib/admin.ts).
   await requireAdmin();
+  if (!mcpExplorerEnabled) {
+    return (
+      <p className="mt-8 rounded-xl bg-surface px-4 py-3 text-sm">
+        The MCP explorer runs only on a developer&apos;s machine: it starts the MCP server as a separate process, which the
+        hosted site can&apos;t do. Run <code className="font-mono">npm run dev</code> locally to use it.
+      </p>
+    );
+  }
   const query = QuerySchema.safeParse(await searchParams);
   const selected = query.success ? query.data : {};
   let parsedArgs: Record<string, unknown> | undefined;

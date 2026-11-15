@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PincodeForm } from "@/components/pincode-form";
-import { ProductImage } from "@/components/product-image";
+import { ProductCardPhoto } from "@/components/product-photo";
 import { buttonClass, cardClass } from "@/components/ui";
 import { getBasketView, type BasketLineView, type BasketView } from "@/lib/cart";
 import { removeLine, updateQuantity } from "./actions";
@@ -50,7 +50,7 @@ function Line({ line }: { line: BasketLineView }) {
   return (
     <li className={`flex gap-4 p-3 ${cardClass} ${line.available ? "" : "opacity-70"}`}>
       <div className="w-24 shrink-0 sm:w-32">
-        <ProductImage categorySlug={line.categorySlug} />
+        <ProductCardPhoto image={line.image} categorySlug={line.categorySlug} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-3">
@@ -147,11 +147,13 @@ function Summary({ basket }: { basket: BasketView }) {
         <p className="text-sm text-muted">Delivery charges depend on your pincode.</p>
       )}
 
-      {/* Checkout is the next phase: shown disabled, saying why, rather than a button that does nothing. */}
-      <button type="button" disabled className={buttonClass("primary")}>
-        Checkout
-      </button>
-      <p className="-mt-3 text-center text-xs text-muted">Checkout arrives in the next phase.</p>
+      {basket.hasUnavailable ? (
+        <p className="text-sm">Remove the items that are no longer available to check out.</p>
+      ) : (
+        <Link href="/checkout" className={`${buttonClass("primary")} min-h-11`}>
+          Checkout
+        </Link>
+      )}
     </aside>
   );
 }
