@@ -6,6 +6,37 @@ import { useState } from "react";
 import { buttonClass, labelClass } from "@/components/ui";
 import { uploadPhoto, uploadPhotoForm } from "./photo-actions";
 
+// Photos are shrunk in the browser before upload (ADR-020): Vercel refuses request bodies over
+// 4.5 MB, and a phone photo is often bigger. 2400 px keeps far more detail than the 1600 px the
+// server stores, so nothing visible is lost. Small files are sent untouched.
+const SHRINK_ABOVE_BYTES = 1.5 * 1024 * 1024;
+const SHRINK_EDGE = 2400;
+
+async function prepare(file: File): Promise<File | null> {
+  if (file.size <= SHRINK_ABOVE_BYTES) return file;
+  try {
+    // createImageBitmap applies the EXIF orientation, so the result is the right way up.
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, SHRINK_EDGE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const context = canvas.getContext("2d");
+    if (!context) return file.size <= MAX_UPLOAD_BYTES ? file : null;
+    // White behind transparent PNG areas, since JPEG has no transparency.
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob || blob.size > MAX_UPLOAD_BYTES) return file.size <= MAX_UPLOAD_BYTES ? file : null;
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+  } catch {
+    // This browser can't decode it: send it as it is if it fits, and let the server judge the format.
+    return file.size <= MAX_UPLOAD_BYTES ? file : null;
+  }
+}
+
 interface Progress {
   done: number;
   total: number;
@@ -33,13 +64,13 @@ export function PhotoUploader({ productId, remaining }: { productId: string; rem
     setProgress({ done: 0, total: files.length, errors });
 
     for (const [index, file] of files.entries()) {
-      // A quick check here saves sending a file the server would refuse anyway (it checks again).
-      if (file.size > MAX_UPLOAD_BYTES) {
-        errors.push(`${file.name} is over 5 MB.`);
+      const prepared = await prepare(file);
+      if (!prepared) {
+        errors.push(`${file.name} is over 4 MB and couldn't be shrunk (is it a photo?).`);
       } else {
         const data = new FormData();
         data.set("productId", productId);
-        data.set("photo", file);
+        data.set("photo", prepared);
         try {
           const result = await uploadPhoto(data);
           if (!result.ok) errors.push(result.message);
@@ -57,7 +88,7 @@ export function PhotoUploader({ productId, remaining }: { productId: string; rem
     <form action={uploadPhotoForm} onSubmit={onSubmit} className="flex flex-col gap-3 border-t border-border pt-4">
       <input type="hidden" name="productId" value={productId} />
       <label className={labelClass}>
-        Add photos (JPEG, PNG or WebP, up to 5 MB each)
+        Add photos (JPEG, PNG or WebP; large photos are shrunk before upload)
         <input
           name="photo"
           type="file"

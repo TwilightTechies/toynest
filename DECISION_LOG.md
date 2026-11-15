@@ -275,3 +275,23 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - The auth phase must link guest orders to accounts, for example by verified email.
   - The `20261113150000_add_checkout_orders` migration bundles several closely linked changes. It was applied before the project's "one concern per migration" rule was in place, so it's left as is rather than rewriting migration history. Later migrations follow the rule (e.g. the separate `orders_placed_at` index).
   - Checked with `next start`: 17/17 browser checks, run twice (validation, COD, online success, decline then retry, pending then check status, double submit, COD limit, unavailable item, forged price, admin list), and 6 live adapter tests (atomic and idempotent under concurrency, numbering, a total that doesn't add up, one open attempt, conditional moves, RLS).
+
+## ADR-020 · Hosting on Vercel (Hobby) with Supabase
+- **Date:** 15 Nov 2026 · **Status:** Accepted
+- **Context:** The user wants ToyNest online. Vercel is the natural host for Next.js and offers a free Hobby plan. A few things in the code only worked on a developer's machine.
+- **Decision:**
+  - **Vercel Hobby with Supabase Free** while ToyNest is a learning project. Hobby is personal and non-commercial only, so selling for real means moving to Pro. The steps are in `docs/DEPLOYMENT.md`.
+  - **Photo uploads fit Vercel's 4.5 MB request-body limit,** which applies on every plan:
+    - the server limit (`MAX_UPLOAD_BYTES`) drops to 4 MB, with a `serverActions` body limit of 4.5 MB;
+    - the admin uploader shrinks photos over 1.5 MB in the browser before sending them (canvas, longest side 2400 px, JPEG quality 0.9). `createImageBitmap` applies EXIF orientation. The server still checks the real format and makes the 1600 px and 480 px WebP renditions (ADR-017), so nothing visible is lost.
+    - Checked with an 8.8 MB, 12 MP photo, which uploaded fine.
+  - **The MCP explorer is turned off when `VERCEL=1`.** It starts `apps/mcp-server` as a child process over stdio, which serverless functions can't do. It still works locally, including under `next start`.
+  - **The AI-draft sample is imported as JSON** (bundled at build time) instead of read from `data/` when a page loads.
+  - **Node is pinned with `engines: "24.x"`,** matching `.nvmrc`, so Vercel can't pick a different major version.
+- **Alternatives:** Direct browser-to-Supabase-Storage uploads with signed URLs (no body limit, but the server's format check and resize would have to run after the fact); Vercel Blob (a second storage service next to Supabase); a VPS or Docker host (more to operate); Netlify or Render (similar trade-offs; Vercel matches Next.js best).
+- **Consequences:**
+  - Previews and production share one Supabase project.
+  - Supabase Free pauses after 7 quiet days.
+  - Without JS, the plain upload form can't shrink photos, so photos over 4 MB fail there.
+  - Sample-data mode is local-only.
+  - The `VERCEL=1` switch and the bundled JSON were checked by building locally; the first real Vercel deploy is the final test.

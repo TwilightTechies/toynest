@@ -72,7 +72,9 @@ One phase per project session, each on its own `feat/` branch:
 - [ ] Rate limiting
 - [ ] Notification provider
 - [ ] Playwright E2E suite
-- [ ] Vercel deployment hardening
+- [x] Vercel deployment readiness: upload size, MCP explorer, bundled data, Node pin (ADR-020, docs/DEPLOYMENT.md)
+- [ ] Separate Supabase project for preview deployments
+- [ ] Daily keep-alive or monitoring so Supabase Free doesn't pause
 
 ## Original backlog (from brief)
 - [ ] Real payment gateway

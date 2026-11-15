@@ -1,9 +1,9 @@
 import "server-only";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { ProductBriefSchema, ProductDraftSchema } from "@toynest/ai";
 import { z } from "zod";
-import { dataDir } from "./env";
+// Imported, not read from disk at request time: the file is bundled into the build, so the page also
+// works on Vercel, where the repo's data/ folder isn't next to the running function (ADR-020).
+import sampleDraft from "../../../../data/sample-draft.json";
 
 // Same contract the assistants must satisfy; the file is an external boundary, so validate it.
 const SampleDraftSchema = z.object({
@@ -14,6 +14,5 @@ const SampleDraftSchema = z.object({
 export type SampleDraft = z.infer<typeof SampleDraftSchema>;
 
 export async function getSampleDraft(): Promise<SampleDraft> {
-  "use cache";
-  return SampleDraftSchema.parse(JSON.parse(await readFile(path.join(dataDir, "sample-draft.json"), "utf8")));
+  return SampleDraftSchema.parse(sampleDraft);
 }

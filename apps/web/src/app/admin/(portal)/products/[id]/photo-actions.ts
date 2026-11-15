@@ -13,7 +13,7 @@ import { CATALOG_CACHE_TAG } from "@/lib/catalog";
 export type UploadResult = { ok: true } | { ok: false; message: string };
 
 const failureText: Record<ImageFailureReason, string> = {
-  too_large: "is over 5 MB",
+  too_large: "is over 4 MB",
   unsupported_format: "isn't a JPEG, PNG or WebP photo",
   too_small: "is smaller than 400 px on its shortest side",
   too_many_pixels: "has more than 40 megapixels",
