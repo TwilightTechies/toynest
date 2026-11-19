@@ -1,6 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import type { Category, CategoryRepository, Product, ProductRepository, ProductSort } from "@toynest/core";
+import {
+  type Category,
+  type CategoryRepository,
+  type MerchandisingRepository,
+  type Order,
+  type OrderStatus,
+  type Product,
+  type ProductRepository,
+  type ProductSort,
+} from "@toynest/core";
 import { z } from "zod";
 
 export const SampleCatalogSchema = z.object({
@@ -26,6 +35,9 @@ export const SampleCatalogSchema = z.object({
       personalisation: z.literal("name").optional(),
       // Date the product was added to the shop; drives the "newest" sort and "New arrivals".
       addedOn: z.iso.date(),
+      // Shown on the home page's Featured shelf (ADR-021). Sample mode only: the Supabase seed
+      // leaves the flag to admins, so re-seeding never undoes their choices.
+      featured: z.boolean().optional(),
     }),
   ),
 });
@@ -53,10 +65,12 @@ export function describeSampleProduct(product: SampleProduct): string {
 export interface Catalog {
   products: ProductRepository;
   categories: CategoryRepository;
+  merchandising: MerchandisingRepository;
 }
 
 // Loads data/sample-catalog.json into in-memory repositories (stand-in for Supabase).
-export async function loadSampleCatalog(filePath: string): Promise<Catalog> {
+// `orders` (the sample support orders) drive Best sellers; without them that shelf is empty.
+export async function loadSampleCatalog(filePath: string, options: { orders?: Order[] } = {}): Promise<Catalog> {
   const data = SampleCatalogSchema.parse(JSON.parse(await readFile(filePath, "utf8")));
 
   // Sample categories are all shown, in file order (ADR-018).
@@ -86,7 +100,24 @@ export async function loadSampleCatalog(filePath: string): Promise<Catalog> {
     };
   });
 
-  return { products: createInMemoryProductRepository(products), categories: { list: async () => categories } };
+  const idBySlug = new Map(products.map((product) => [product.slug, product.id]));
+  const sales: InMemorySale[] = (options.orders ?? []).flatMap((order) =>
+    order.items.flatMap((item) => {
+      const productId = idBySlug.get(item.productSlug);
+      return productId ? [{ productId, quantity: item.quantity, status: order.status, placedAt: order.placedAt }] : [];
+    }),
+  );
+
+  return {
+    products: createInMemoryProductRepository(products),
+    categories: { list: async () => categories },
+    merchandising: createInMemoryMerchandisingRepository({
+      products,
+      categories,
+      featuredIds: new Set(data.products.filter((p) => p.featured).flatMap((p) => idBySlug.get(p.slug) ?? [])),
+      sales,
+    }),
+  };
 }
 
 const byName = (a: Product, b: Product) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
@@ -127,3 +158,49 @@ export function createInMemoryProductRepository(products: Product[]): ProductRep
     },
   };
 }
+
+// One sold order line, reduced to what the ranking needs.
+export interface InMemorySale {
+  productId: string;
+  quantity: number;
+  status: OrderStatus;
+  placedAt: string;
+}
+
+// Mirrors the Supabase shelf queries (ADR-021): active products in visible categories only.
+export function createInMemoryMerchandisingRepository(data: {
+  products: Product[];
+  categories: Category[];
+  featuredIds: ReadonlySet<string>;
+  sales: InMemorySale[];
+}): MerchandisingRepository {
+  const visible = new Set(data.categories.filter((category) => category.visible).map((category) => category.id));
+  const forSale = (product: Product) => product.status === "active" && visible.has(product.categoryId);
+  const byId = new Map(data.products.map((product) => [product.id, product]));
+
+  return {
+    listFeatured: async (limit) =>
+      data.products
+        .filter((product) => data.featuredIds.has(product.id) && forSale(product))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id))
+        .slice(0, limit),
+
+    listBestSellers: async ({ since, soldStatuses, limit }) => {
+      const units = new Map<string, number>();
+      for (const sale of data.sales) {
+        // ISO timestamps from the same clock compare correctly as numbers of milliseconds.
+        if (!soldStatuses.includes(sale.status) || Date.parse(sale.placedAt) < Date.parse(since)) continue;
+        units.set(sale.productId, (units.get(sale.productId) ?? 0) + sale.quantity);
+      }
+      return [...units.entries()]
+        .flatMap(([id, sold]) => {
+          const product = byId.get(id);
+          return product && forSale(product) ? [{ product, sold }] : [];
+        })
+        .sort((a, b) => b.sold - a.sold || byName(a.product, b.product))
+        .slice(0, Math.max(0, Math.min(limit, 100)))
+        .map(({ product }) => product);
+    },
+  };
+}
+

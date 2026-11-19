@@ -102,7 +102,7 @@ function fakeRepository(): ProductAdminRepository & { rows: Map<string, AdminPro
     async create(input) {
       assertSlugFree(input.slug);
       const now = new Date().toISOString();
-      const row: AdminProduct = { ...input, id: randomUUID(), currency: "INR", status: "draft", createdAt: now, updatedAt: now, version: stamp() };
+      const row: AdminProduct = { ...input, id: randomUUID(), currency: "INR", status: "draft", featured: false, createdAt: now, updatedAt: now, version: stamp() };
       rows.set(row.id, row);
       return row;
     },
@@ -112,6 +112,9 @@ function fakeRepository(): ProductAdminRepository & { rows: Map<string, AdminPro
     },
     async setStatus(id, status: ProductStatus, expected) {
       return save(id, { status }, expected);
+    },
+    async setFeatured(id, featured, expected) {
+      return save(id, { featured }, expected);
     },
   };
 }
@@ -202,5 +205,36 @@ describe("product admin service", () => {
   it("reports an unknown id as not found", async () => {
     const { service } = setup();
     expect(await service.changeStatus(randomUUID(), "publish", "v1")).toEqual({ ok: false, reason: "not_found" });
+  });
+});
+
+describe("featuring a product (ADR-021)", () => {
+  it("features and unfeatures a product in any status, with a new version each time", async () => {
+    const { service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup failed");
+    expect(created.product.status).toBe("draft");
+    const on = await service.setFeatured(created.product.id, true, created.product.version);
+    expect(on.ok && on.product.featured).toBe(true);
+    if (!on.ok) return;
+    const off = await service.setFeatured(on.product.id, false, on.product.version);
+    expect(off.ok && off.product.featured).toBe(false);
+  });
+
+  it("refuses a stale version and reports an unknown product", async () => {
+    const { service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup failed");
+    await service.setFeatured(created.product.id, true, created.product.version);
+    expect(await service.setFeatured(created.product.id, false, created.product.version)).toEqual({ ok: false, reason: "conflict" });
+    expect(await service.setFeatured(randomUUID(), true, "v1")).toEqual({ ok: false, reason: "not_found" });
+  });
+
+  it("is a no-op when the flag already has that value", async () => {
+    const { service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup failed");
+    const same = await service.setFeatured(created.product.id, false, created.product.version);
+    expect(same.ok && same.product.version).toBe(created.product.version);
   });
 });

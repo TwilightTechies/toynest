@@ -76,6 +76,8 @@ async function main() {
     catalog.products.map((p) => {
       const categoryId = categoryIds.get(p.categorySlug);
       if (!categoryId) throw new Error(`Product ${p.slug} references unknown category ${p.categorySlug}`);
+      // `featured` is left out on purpose (ADR-021): admins own it, so re-seeding keeps their picks.
+      // The sample file's `featured` flags are for sample mode only.
       return {
         slug: p.slug,
         name: p.name,

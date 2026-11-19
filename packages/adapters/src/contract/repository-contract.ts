@@ -75,11 +75,15 @@ export function describeRepositoryContract(name: string, setup: () => Promise<Co
       });
 
       it("pages results without changing the total", async () => {
-        const { products } = await subject();
-        const page = await products.search({ limit: 3, offset: 0 });
+        const { products, categories } = await subject();
+        // Scoped to a seeded category no test writes to: other test files (admin, merchandising)
+        // add live products in parallel, which would change an all-products total between the calls.
+        const educational = (await categories.list()).find((c) => c.slug === "educational-toys")!;
+        const query = { categoryId: educational.id };
+        const page = await products.search({ ...query, limit: 3, offset: 0 });
         expect(page.items).toHaveLength(3);
-        expect(page.total).toBe((await products.search({ limit: 100, offset: 0 })).total);
-        expect(page.total).toBeGreaterThanOrEqual(catalog.products.length);
+        expect(page.total).toBe((await products.search({ ...query, limit: 100, offset: 0 })).total);
+        expect(page.total).toBeGreaterThanOrEqual(catalog.products.filter((p) => p.categorySlug === "educational-toys").length);
       });
 
       it("filters by category", async () => {

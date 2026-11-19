@@ -19,6 +19,7 @@ import type {
   CheckoutOrderRepository,
   Customer,
   CustomerRepository,
+  MerchandisingRepository,
   OrderRepository,
   PaymentProvider,
   ProductImageRepository,
@@ -38,6 +39,8 @@ export interface Repositories {
   carts: CartRepository;
   shippingZones: ShippingZoneRepository;
   images: ProductImageRepository;
+  // Home-page shelves: Featured and Best sellers (ADR-021).
+  merchandising: MerchandisingRepository;
   // Checkout (ADR-019): orders written by the server only, and the payment gateway (mock for now).
   checkoutOrders: CheckoutOrderRepository;
   payments: PaymentProvider;
@@ -77,8 +80,9 @@ export async function getRepositories(): Promise<Repositories> {
 }
 
 async function loadSampleRepositories(): Promise<Repositories> {
-  const catalog = await loadSampleCatalog(path.join(dataDir, "sample-catalog.json"));
   const support = await loadSampleSupport(path.join(dataDir, "sample-support.json"));
+  // The sample orders drive the sample-mode Best sellers shelf.
+  const catalog = await loadSampleCatalog(path.join(dataDir, "sample-catalog.json"), { orders: support.orderList });
   return {
     source: "sample",
     ...catalog,

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui";
 import { requireAdmin } from "@/lib/admin";
-import { ProductForm, StatusControls } from "../product-form";
+import { FeaturedControl, ProductForm, StatusControls } from "../product-form";
 import { statusLabel, statusTone } from "../status";
 import { PhotosCard } from "./photos";
 
@@ -27,7 +27,7 @@ export default function EditProductPage({ params, searchParams }: PageProps<"/ad
 async function EditProduct({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const { context } = await requireAdmin();
   const { id } = await params;
-  const { saved, status, photo, photoError } = await searchParams;
+  const { saved, status, photo, photoError, featured } = await searchParams;
   const [product, categories, photos] = await Promise.all([
     context.products.get(id),
     context.categories.list(),
@@ -36,13 +36,24 @@ async function EditProduct({ params, searchParams }: PageProps<"/admin/products/
   if (!product) notFound();
 
   const notice =
-    saved === "1" ? "Saved." : status === "active" ? "Published: shoppers can see it now." : status ? `Moved to ${statusLabel[product.status].toLowerCase()}.` : null;
+    saved === "1"
+      ? "Saved."
+      : featured === "on"
+        ? "Added to the Featured shelf."
+        : featured === "off"
+          ? "Removed from the Featured shelf."
+          : status === "active"
+            ? "Published: shoppers can see it now."
+            : status
+              ? `Moved to ${statusLabel[product.status].toLowerCase()}.`
+              : null;
 
   return (
     <>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <h1 className="font-display text-3xl font-semibold tracking-tight">{product.name}</h1>
         <Badge tone={statusTone(product.status)}>{statusLabel[product.status]}</Badge>
+        {product.featured && <Badge tone="neutral">Featured</Badge>}
       </div>
       <p className="mt-1 text-sm text-muted">
         Last updated {new Date(product.updatedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
@@ -83,6 +94,13 @@ async function EditProduct({ params, searchParams }: PageProps<"/admin/products/
           error={typeof photoError === "string" ? photoError.slice(0, 300) : undefined}
         />
         <StatusControls key={`status-${product.version}`} id={product.id} version={product.version} status={product.status} />
+        <FeaturedControl
+          key={`featured-${product.version}`}
+          id={product.id}
+          version={product.version}
+          featured={product.featured}
+          live={product.status === "active" && categories.some((c) => c.id === product.categoryId && c.visible)}
+        />
       </div>
     </>
   );

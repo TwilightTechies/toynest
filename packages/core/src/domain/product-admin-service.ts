@@ -84,6 +84,16 @@ export function createProductAdminService(products: ProductAdminRepository, cate
       }
       return write(() => products.setStatus(id, transition.to, expectedVersion));
     },
+
+    // Any status may be featured, so a product can be lined up before launch; the shelf itself
+    // shows only active products in visible categories (ADR-021).
+    async setFeatured(id: string, featured: boolean, expectedVersion: string): Promise<AdminResult> {
+      const current = await products.get(id);
+      if (!current) return { ok: false, reason: "not_found" };
+      if (current.version !== expectedVersion) return { ok: false, reason: "conflict" };
+      if (current.featured === featured) return { ok: true, product: current };
+      return write(() => products.setFeatured(id, featured, expectedVersion));
+    },
   };
 }
 

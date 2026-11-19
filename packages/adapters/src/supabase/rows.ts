@@ -57,12 +57,18 @@ export function toProduct(row: unknown): Product {
   });
 }
 
-// Admin view: the same row plus updated_at, kept verbatim as the optimistic-concurrency version.
-export const ADMIN_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS}, updated_at`;
+// Admin view: the same row plus updated_at, kept verbatim as the optimistic-concurrency version,
+// and the featured flag (ADR-021), which only the admin needs to see.
+export const ADMIN_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS}, updated_at, featured`;
 
 export function toAdminProduct(row: unknown): AdminProduct {
-  const updatedAt = z.object({ updated_at: z.string().min(1) }).parse(row).updated_at;
-  return AdminProductSchema.parse({ ...toProduct(row), version: updatedAt, updatedAt: toIsoUtc(updatedAt) });
+  const extra = z.object({ updated_at: z.string().min(1), featured: z.boolean() }).parse(row);
+  return AdminProductSchema.parse({
+    ...toProduct(row),
+    featured: extra.featured,
+    version: extra.updated_at,
+    updatedAt: toIsoUtc(extra.updated_at),
+  });
 }
 
 export const CATEGORY_COLUMNS = "id, slug, name, required_attributes, visible, sort_order, menu_label";

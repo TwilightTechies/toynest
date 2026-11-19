@@ -22,6 +22,8 @@ export interface SupportData {
   orders: OrderRepository;
   // Synthetic sign-in list for the demo (stand-in for Supabase Auth).
   sampleCustomers: Customer[];
+  // Every sample order, for the sample-mode Best sellers shelf (ADR-021).
+  orderList: Order[];
 }
 
 // Loads data/sample-support.json into in-memory repositories (stand-in for Supabase).
@@ -34,6 +36,7 @@ export async function loadSampleSupport(filePath: string): Promise<SupportData> 
     customers: { findById: async (id) => data.customers.find((customer) => customer.id === id) ?? null },
     orders: createInMemoryOrderRepository(orders, outageIds),
     sampleCustomers: data.customers,
+    orderList: orders,
   };
 }
 
