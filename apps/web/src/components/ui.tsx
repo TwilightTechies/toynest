@@ -13,12 +13,17 @@ const buttonVariants: Record<ButtonVariant, string> = {
 };
 
 export function buttonClass(variant: ButtonVariant = "primary", size: "sm" | "md" = "md"): string {
-  const sizing = size === "sm" ? "px-3.5 py-1.5 text-sm" : "px-5 py-2.5 text-sm";
+  // Tap targets: md buttons are always 44 px tall; sm stays compact for a mouse but grows to
+  // 44 px on touch screens (pointer-coarse), whatever the width.
+  const sizing = size === "sm" ? "px-3.5 py-1.5 text-sm pointer-coarse:min-h-11" : "min-h-11 px-5 py-2.5 text-sm";
   return `${buttonBase} ${buttonVariants[variant]} ${sizing}`;
 }
 
+// Stand-alone text links (back links, breadcrumbs, "See all"): 44 px tall on touch screens.
+export const touchLinkClass = "pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center";
+
 export const fieldClass =
-  "w-full rounded-xl border border-border-strong bg-surface-raised px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent";
+  "min-h-11 w-full min-w-0 rounded-xl border border-border-strong bg-surface-raised px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-accent sm:text-sm";
 
 export const labelClass = "flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted";
 

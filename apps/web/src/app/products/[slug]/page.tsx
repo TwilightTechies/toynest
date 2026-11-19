@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ProductGallery } from "@/components/product-gallery";
 import { AddToBasketForm } from "@/components/add-to-basket-form";
-import { Badge } from "@/components/ui";
+import { Badge, touchLinkClass } from "@/components/ui";
 import { getProduct } from "@/lib/catalog";
 
 type Params = Promise<{ slug: string }>;
@@ -34,14 +34,14 @@ async function Product({ params }: { params: Params }) {
       <nav aria-label="Breadcrumb" className="text-sm text-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/products" className="hover:text-accent hover:underline">
+            <Link href="/products" className={`hover:text-accent hover:underline ${touchLinkClass}`}>
               Shop
             </Link>
           </li>
           {product.categorySlug && (
             <li className="flex items-center gap-1.5">
               <span aria-hidden="true">/</span>
-              <Link href={`/products?category=${product.categorySlug}`} className="hover:text-accent hover:underline">
+              <Link href={`/products?category=${product.categorySlug}`} className={`hover:text-accent hover:underline ${touchLinkClass}`}>
                 {product.categoryName}
               </Link>
             </li>

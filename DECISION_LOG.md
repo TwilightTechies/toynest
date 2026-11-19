@@ -124,6 +124,15 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - A path-scoped rule (`.claude/rules/web-ui.md`) records these conventions, so later sessions apply them when they edit web UI files.
 - **Alternatives:** Figma mock-ups first (an extra round-trip; tokens make code changes cheap); a component library such as shadcn/ui (more dependencies than eight pages need); a slide-out drawer with a focus trap (more JS than a short list of links needs).
 - **Consequences:** Support and admin pages inherit the colours and fonts but still use raw `zinc` classes. They move to tokens in the design polish phase. Without JS, phone users can't open the menu or filter panel, but every destination is still reachable from the footer and home page. Visual checks were done with headless Chrome at 375, 768 and 1280 px in light and dark.
+- **Amended 19 Nov 2026 (user request):**
+  - **Light is the default theme.** The server renders `<html data-theme="light">` (so it also holds without JS). Choosing Dark stores `dark`. Choosing Auto now stores `system` explicitly and removes the attribute, so the device decides. Choosing Light clears storage. A shopper who had picked Auto before this change (nothing stored) now gets light. `theme-color` is the light background only.
+  - **Mobile fixes from a CDP audit** (360/390/768/1280 px, touch emulation, 10 pages plus menu, filters, basket and checkout):
+    - fields and medium buttons are 44 px tall;
+    - small controls grow to 44 px on touch screens only, via Tailwind's `pointer-coarse:` variant: basket −/+ and Remove, footer links, pagination, the theme switch, back links and breadcrumbs (`touchLinkClass`). Mouse layouts keep their density;
+    - fields use 16 px text on phones, because iOS Safari zooms the page into any input under 16 px;
+    - the support page's customer `<select>` no longer overflows at 360 px (`min-w-0`);
+    - at tablet width the filter form wraps to two rows instead of squashing Category and Sort;
+    - on phones the checkout summary comes first, so the total is seen before "Place order".
 
 ## ADR-014 · India localisation: INR in paise, en-IN formatting
 - **Date:** 12 Nov 2026 · **Status:** Accepted

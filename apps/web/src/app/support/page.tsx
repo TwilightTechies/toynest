@@ -40,7 +40,9 @@ async function SupportSession() {
           <p className="text-xs text-zinc-500">Mock session: a stand-in for Supabase Auth.</p>
           <select
             name="customerId"
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
+            // min-w-0 + w-full: a grid item is as wide as its longest option by default, which
+            // overflowed the card on 360 px phones; the closed select now truncates instead.
+            className="min-h-11 w-full min-w-0 rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
           >
             {sampleCustomers.map((customer) => (
               <option key={customer.id} value={customer.id}>

@@ -18,7 +18,7 @@ function BasketLinkView({ count }: { count: number | null }) {
     <Link href="/basket" aria-label={label} className="relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface hover:text-accent">
       <BagIcon />
       {count ? (
-        <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-foreground">
+        <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-bold text-accent-foreground">
           {count > 99 ? "99+" : count}
         </span>
       ) : null}

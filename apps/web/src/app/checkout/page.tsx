@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { cardClass } from "@/components/ui";
+import { cardClass, touchLinkClass } from "@/components/ui";
 import { getBasketView } from "@/lib/cart";
 import { CheckoutForm } from "./checkout-form";
 
@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Checkout · ToyNest", robots: { inde
 export default function CheckoutPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
-      <Link href="/basket" className="text-sm font-semibold text-accent hover:underline">
+      <Link href="/basket" className={`text-sm font-semibold text-accent hover:underline ${touchLinkClass}`}>
         ← Back to basket
       </Link>
       <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">Checkout</h1>
@@ -40,7 +40,12 @@ async function Checkout() {
         codLimit={formatMoney(COD_MAX_MINOR)}
       />
 
-      <aside aria-labelledby="summary-heading" className={`${cardClass} flex flex-col gap-4 p-5 lg:sticky lg:top-24`}>
+      {/* Phones show the summary first, so the total is seen before "Place order" (which sits at the
+          end of the form); from lg it moves to a sticky right-hand column. Source order stays form-first. */}
+      <aside
+        aria-labelledby="summary-heading"
+        className={`${cardClass} order-first flex flex-col gap-4 p-5 lg:sticky lg:top-24 lg:order-none`}
+      >
         <h2 id="summary-heading" className="font-display text-xl font-semibold">
           Order summary
         </h2>

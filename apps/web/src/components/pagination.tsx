@@ -6,7 +6,7 @@ import { buttonClass } from "./ui";
 export function Pagination({ params, pageCount }: { params: CatalogParams; pageCount: number }) {
   if (pageCount <= 1) return null;
   const href = (page: number) => `/products${catalogSearchString(params, { page })}`;
-  const numberClass = "flex h-10 min-w-10 items-center justify-center rounded-full px-3 text-sm font-semibold";
+  const numberClass = "flex h-10 min-w-10 pointer-coarse:h-11 pointer-coarse:min-w-11 items-center justify-center rounded-full px-3 text-sm font-semibold";
 
   return (
     <nav aria-label="Pagination" className="mt-10 flex flex-wrap items-center justify-center gap-2">

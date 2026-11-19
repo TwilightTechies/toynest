@@ -1,11 +1,11 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { THEME_CHANGE_EVENT, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
+import { DEFAULT_THEME, THEME_CHANGE_EVENT, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
 
 // The <html data-theme> attribute is the source of truth (the boot script set it before paint),
-// so reading it never touches storage. The server snapshot is "system": the server can't know
-// the choice, and useSyncExternalStore re-renders with the real value after hydration.
+// so reading it never touches storage. No attribute means "Auto". The server snapshot is the
+// light default; useSyncExternalStore re-renders with the real value after hydration.
 function readChoice(): ThemeChoice {
   const value = document.documentElement.dataset.theme;
   return value === "light" || value === "dark" ? value : "system";
@@ -21,7 +21,7 @@ function subscribe(onChange: () => void) {
   // Another tab changed the choice: apply it here too.
   const onStorage = (event: StorageEvent) => {
     if (event.key !== THEME_STORAGE_KEY) return;
-    apply(event.newValue === "light" || event.newValue === "dark" ? event.newValue : "system");
+    apply(event.newValue === "dark" || event.newValue === "system" ? event.newValue : DEFAULT_THEME);
     onChange();
   };
   window.addEventListener(THEME_CHANGE_EVENT, onChange);
@@ -35,7 +35,7 @@ function subscribe(onChange: () => void) {
 function choose(choice: ThemeChoice) {
   apply(choice);
   try {
-    if (choice === "system") localStorage.removeItem(THEME_STORAGE_KEY);
+    if (choice === DEFAULT_THEME) localStorage.removeItem(THEME_STORAGE_KEY);
     else localStorage.setItem(THEME_STORAGE_KEY, choice);
   } catch {
     // Storage blocked: the choice still applies for this page view.
@@ -88,7 +88,7 @@ const options: { value: ThemeChoice; label: string; icon: React.ReactNode }[] = 
 
 // A group of toggle buttons (aria-pressed). "Auto" follows the device's light/dark setting.
 export function ThemeToggle({ showLabels = false }: { showLabels?: boolean }) {
-  const current = useSyncExternalStore(subscribe, readChoice, () => "system" as const);
+  const current = useSyncExternalStore(subscribe, readChoice, () => DEFAULT_THEME);
 
   return (
     <div role="group" aria-label="Colour theme" className="inline-flex rounded-full border border-border bg-surface p-0.5">
@@ -103,7 +103,7 @@ export function ThemeToggle({ showLabels = false }: { showLabels?: boolean }) {
             title={option.value === "system" ? "Auto: follow this device" : `${option.label} theme`}
             onClick={() => choose(option.value)}
             className={`flex items-center gap-1.5 rounded-full text-xs font-semibold transition-colors ${
-              showLabels ? "px-3 py-2" : "h-8 w-8 justify-center"
+              showLabels ? "px-3 py-2 pointer-coarse:min-h-11 pointer-coarse:px-4" : "h-8 w-8 justify-center pointer-coarse:h-11 pointer-coarse:w-11"
             } ${pressed ? "bg-surface-raised text-accent shadow-sm" : "text-muted hover:text-foreground"}`}
           >
             {option.icon}
