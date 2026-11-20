@@ -9,7 +9,7 @@ paths:
 - `terracotta` is decorative only (fails 4.5:1 as text). Links and buttons use `accent`. Check contrast for any new token pair, in light and dark.
 - Reuse the primitives in `src/components/ui.tsx` (`buttonClass`, `fieldClass`, `labelClass`, `cardClass`, `Badge`, `SectionHeading`) instead of restating their classes.
 - Headings use `font-display` (Fraunces); body text inherits `font-sans` (Nunito Sans).
-- Design mobile-first: base classes for phones, then `sm:`/`md:`/`lg:`. Tap targets are at least 44 px. Check at 375, 768 and 1280 px.
+- Design mobile-first: base classes for phones, then `sm:`/`md:`/`lg:`. Tap targets are at least 44 px: fields and md buttons always; small controls and stand-alone text links via `pointer-coarse:min-h-11` (or `touchLinkClass`). Form fields use 16 px text on phones (iOS zooms into smaller inputs). Check at 360, 768 and 1280 px.
 - Server components by default. Client components only for real interaction (e.g. `mobile-menu.tsx`, `filter-panel.tsx`, `theme-toggle.tsx`); keep them small and accessible (`aria-expanded`, `aria-controls`, Escape to close).
 - Pages and forms keep working through URLs and plain GET forms. Don't move browsing state into client state.
-- Themes: any new token needs a light value in `:root` and a dark value in BOTH dark blocks (the media query and `[data-theme="dark"]`). Test with the switch set to Light, Dark and Auto.
+- Themes: any new token needs a light value in `:root` and a dark value in BOTH dark blocks (the media query and `[data-theme="dark"]`). Test with the switch set to Light, Dark and Auto. Light is the default (`DEFAULT_THEME`); Auto is a stored choice.

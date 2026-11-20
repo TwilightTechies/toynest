@@ -95,3 +95,23 @@ export async function changeStatus(_previous: ProductFormState, formData: FormDa
   updateTag(CATALOG_CACHE_TAG);
   redirect(`/admin/products/${result.product.id}?status=${result.product.status}`);
 }
+
+const FeaturedFormSchema = z.object({
+  id: z.uuid(),
+  version: z.string().min(1),
+  featured: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+
+// Featured shelf on the home page (ADR-021).
+export async function setFeatured(_previous: ProductFormState, formData: FormData): Promise<ProductFormState> {
+  const { catalogue } = await requireAdmin();
+  const parsed = FeaturedFormSchema.safeParse(formValues(formData));
+  if (!parsed.success) return { message: "That request wasn't valid. Reload the page and try again.", problems: [] };
+
+  const result = await catalogue.setFeatured(parsed.data.id, parsed.data.featured, parsed.data.version);
+  if (!result.ok) return failureState(result);
+
+  updateTag(CATALOG_CACHE_TAG);
+  redirect(`/admin/products/${result.product.id}?featured=${result.product.featured ? "on" : "off"}`);
+}
+

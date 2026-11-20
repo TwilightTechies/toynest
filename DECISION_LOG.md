@@ -124,6 +124,15 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - A path-scoped rule (`.claude/rules/web-ui.md`) records these conventions, so later sessions apply them when they edit web UI files.
 - **Alternatives:** Figma mock-ups first (an extra round-trip; tokens make code changes cheap); a component library such as shadcn/ui (more dependencies than eight pages need); a slide-out drawer with a focus trap (more JS than a short list of links needs).
 - **Consequences:** Support and admin pages inherit the colours and fonts but still use raw `zinc` classes. They move to tokens in the design polish phase. Without JS, phone users can't open the menu or filter panel, but every destination is still reachable from the footer and home page. Visual checks were done with headless Chrome at 375, 768 and 1280 px in light and dark.
+- **Amended 19 Nov 2026 (user request):**
+  - **Light is the default theme.** The server renders `<html data-theme="light">` (so it also holds without JS). Choosing Dark stores `dark`. Choosing Auto now stores `system` explicitly and removes the attribute, so the device decides. Choosing Light clears storage. A shopper who had picked Auto before this change (nothing stored) now gets light. `theme-color` is the light background only.
+  - **Mobile fixes from a CDP audit** (360/390/768/1280 px, touch emulation, 10 pages plus menu, filters, basket and checkout):
+    - fields and medium buttons are 44 px tall;
+    - small controls grow to 44 px on touch screens only, via Tailwind's `pointer-coarse:` variant: basket −/+ and Remove, footer links, pagination, the theme switch, back links and breadcrumbs (`touchLinkClass`). Mouse layouts keep their density;
+    - fields use 16 px text on phones, because iOS Safari zooms the page into any input under 16 px;
+    - the support page's customer `<select>` no longer overflows at 360 px (`min-w-0`);
+    - at tablet width the filter form wraps to two rows instead of squashing Category and Sort;
+    - on phones the checkout summary comes first, so the total is seen before "Place order".
 
 ## ADR-014 · India localisation: INR in paise, en-IN formatting
 - **Date:** 12 Nov 2026 · **Status:** Accepted
@@ -295,3 +304,23 @@ Lightweight ADRs. Each entry: context → decision → alternatives → conseque
   - Without JS, the plain upload form can't shrink photos, so photos over 4 MB fail there.
   - Sample-data mode is local-only.
   - The `VERCEL=1` switch and the bundled JSON were checked by building locally; the first real Vercel deploy is the final test.
+
+## ADR-021 · Home page merchandising: admin-picked Featured shelf and sales-ranked Best sellers
+- **Date:** 19 Nov 2026 · **Status:** Accepted
+- **Context:** ADR-012 deferred "Featured" and "Best sellers" because nothing could drive them. Admin product editing (ADR-016) and real orders (ADR-019) now exist.
+- **Decision:**
+  - **`products.featured boolean`**, admin-only in the domain. `AdminProduct` gains `featured`; the storefront `Product`, `search_products`, the MCP server and the agent tools are unchanged. Any status may be featured, so a product can be lined up before launch. A partial index covers `created_at desc where featured`. The existing admin update policy covers the column.
+  - **A separate `MerchandisingRepository` port** (`listFeatured`, `listBestSellers`) instead of new methods on `ProductRepository`. The MCP server and the draft agent only search and look up products, so their fakes don't have to implement shelf queries (interface segregation). Both methods return only active products in visible categories (ADR-018).
+  - **"Sold" is defined once, in core:** `SOLD_ORDER_STATUSES = placed, dispatched, delivered`. Cash on Delivery counts (placed at once); `awaiting_payment` and `cancelled` don't. The SQL function receives the list as a parameter and the in-memory adapter uses the same constant, so they can't drift.
+  - **Best sellers are computed when the page is built**, not stored as running totals (which would need updating on every order and could drift). Window: 90 days. Order: units sold, then name, then id. Cached with `cacheLife("hours")` plus the `catalog` tag: orders don't clear it, so the shelf can lag sales by up to about an hour, and a sale never throws away the whole catalogue cache. Admin edits clear it at once.
+  - **`best_selling_products(since, sold_statuses, page_limit)` is `security definer`** with an empty `search_path`, execute revoked from `public` and granted to `anon`, `authenticated` and `service_role`. It reads orders, which anonymous users can't. As `security invoker` it would work today (the app reads with the service role) and silently return nothing once the auth phase moves reads to the anon key. It returns public product columns only: a ranking, never quantities or order data. A test checks the anon key gets the ranking but still can't read `orders` or `order_items`.
+  - **Too few products hides a shelf:** Featured needs 1, Best sellers needs 2 (`MIN_BEST_SELLERS`; one product isn't a ranking). There's no fallback to "newest", because it would repeat New arrivals. Each shelf shows up to 4 (`HOME_SHELF_SIZE`).
+  - **Home order:** Hero → Featured → Shop by category → Best sellers (its own Suspense boundary, no visible fallback) → New arrivals → Under ₹500. Featured and Best sellers have no "See all" link.
+  - **Admin:** a "Home page" card on the product page (Feature / Remove, with optimistic concurrency like status changes), a Featured badge on the page and in the list, and a note when a featured product isn't live yet.
+  - **The seed leaves `featured` alone**, like `visible` (ADR-018). The sample file's `featured` flags are for sample mode, which also ranks best sellers from the sample support orders.
+- **Alternatives:** A `featured` filter in `search_products` (another drop-and-recreate of the function, and a `featured` column in every search row); a `featured_at` timestamp for manual ordering (not needed while the shelf is "newest 4"); a materialised view or counters for best sellers (refresh jobs or write paths for a 10-product shop); clearing the catalogue cache on every order (exact, but every sale empties the whole cache).
+- **Consequences:**
+  - The live shop has no featured products until an admin picks some, so the Featured shelf stays hidden until then.
+  - The shelf query is one aggregate over 90 days of order lines. Fine at this size; a counter table or materialised view is the next step if orders grow large.
+  - A shared merchandising contract (`contract/merchandising-contract.ts`) runs the same fixture in memory and on throwaway Supabase rows. The Supabase catalogue contract's paging check is now scoped to a seeded category, because parallel test files add live products.
+  - Checked with `next start`: 14/14 browser checks (feature → shelf, hidden category excluded with an admin note, stale version refused, unfeature → shelf hidden, Best sellers equals the SQL ranking, section order, no overflow at 360 and 1280 px); live adapter tests 121/121, twice.

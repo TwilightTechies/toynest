@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Nunito_Sans } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { themeBootScript } from "@/lib/theme";
+import { DEFAULT_THEME, themeBootScript } from "@/lib/theme";
 import "./globals.css";
 
 // Self-hosted at build time by next/font: no request to Google from the shopper's browser.
@@ -15,17 +15,15 @@ export const metadata: Metadata = {
   description: "Wooden toys, personalised gifts and stationery for little hands.",
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf7f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#1c1714" },
-  ],
-};
+// Light is the default theme, so the browser bar matches it (the cream background token).
+export const viewport: Viewport = { themeColor: "#fbf7f0" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      // Light by default, also without JS; the boot script switches to a stored Dark or Auto choice.
+      data-theme={DEFAULT_THEME}
       className={`${fraunces.variable} ${nunitoSans.variable} ${geistMono.variable} h-full antialiased`}
       // The boot script may add data-theme before React hydrates; that difference is expected.
       suppressHydrationWarning

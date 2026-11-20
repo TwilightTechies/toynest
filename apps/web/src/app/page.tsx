@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import { LogoMark } from "@/components/logo";
 import { ProductGrid } from "@/components/product-card";
 import { ProductImage } from "@/components/product-image";
-import { buttonClass, cardClass, SectionHeading } from "@/components/ui";
+import { buttonClass, cardClass, SectionHeading, touchLinkClass } from "@/components/ui";
 import { formatMoney } from "@toynest/core";
-import { getHomeSections, UNDER_PRICE_MINOR, type CatalogItem } from "@/lib/catalog";
+import { getBestSellers, getHomeSections, UNDER_PRICE_MINOR, type CatalogItem } from "@/lib/catalog";
 
 // Learning-project pages built during the certification sprint, kept reachable from the home page.
 const demos = [
@@ -81,11 +81,14 @@ export default function Home() {
 }
 
 async function ShopSections() {
-  const { categories, newArrivals, underTen } = await getHomeSections();
+  const { categories, featured, newArrivals, underTen } = await getHomeSections();
   const underLabel = `Under ${formatMoney(UNDER_PRICE_MINOR)}`;
 
   return (
     <>
+      {/* Admin-picked, so it leads; hidden when nothing is featured (ADR-021). */}
+      <Shelf id="featured" title="Featured" items={featured} />
+
       <section aria-labelledby="categories-heading" className="mt-14">
         <SectionHeading id="categories-heading">Shop by category</SectionHeading>
         <ul className="mt-5 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
@@ -108,21 +111,33 @@ async function ShopSections() {
         </ul>
       </section>
 
+      {/* Its own boundary with no visible fallback: the ranking query never holds up the shelves below. */}
+      <Suspense fallback={null}>
+        <BestSellers />
+      </Suspense>
+
       <Shelf id="new-arrivals" title="New arrivals" href="/products?sort=newest" items={newArrivals} />
       <Shelf id="under-ten" title={underLabel} href={`/products?max=${UNDER_PRICE_MINOR / 100}&sort=price-asc`} items={underTen} />
     </>
   );
 }
 
-function Shelf({ id, title, href, items }: { id: string; title: string; href: string; items: CatalogItem[] }) {
+async function BestSellers() {
+  return <Shelf id="best-sellers" title="Best sellers" items={await getBestSellers()} />;
+}
+
+// href = a "See all" link to the matching listing; shelves with no listing (Featured, Best sellers) omit it.
+function Shelf({ id, title, href, items }: { id: string; title: string; href?: string; items: CatalogItem[] }) {
   if (items.length === 0) return null;
   return (
     <section aria-labelledby={id} className="mt-14">
       <div className="flex items-baseline justify-between gap-4">
         <SectionHeading id={id}>{title}</SectionHeading>
-        <Link href={href} className="text-sm font-semibold text-accent hover:underline">
-          See all →
-        </Link>
+        {href && (
+          <Link href={href} className={`text-sm font-semibold text-accent hover:underline ${touchLinkClass}`}>
+            See all →
+          </Link>
+        )}
       </div>
       <div className="mt-5">
         <ProductGrid items={items} layout="shelf" />

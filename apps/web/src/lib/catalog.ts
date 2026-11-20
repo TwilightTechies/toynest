@@ -1,6 +1,11 @@
 import "server-only";
 import {
+  bestSellerSince,
   CATALOG_PAGE_SIZE,
+  HOME_SHELF_SIZE,
+  MIN_BEST_SELLERS,
+  shelfOrEmpty,
+  SOLD_ORDER_STATUSES,
   formatMoney,
   isPersonalisable,
   menuLabelOf,
@@ -12,7 +17,7 @@ import {
   type ProductImage,
   type ProductSearchQuery,
 } from "@toynest/core";
-import { cacheTag } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { getRepositories, type DataSource } from "./data";
 
 // Every cached catalogue read carries this tag; admin writes call updateTag(CATALOG_CACHE_TAG) so
@@ -183,6 +188,8 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
 
 export interface HomeSections {
   categories: CategorySummary[];
+  // Admin-picked (ADR-021); empty = the shelf is hidden.
+  featured: CatalogItem[];
   newArrivals: CatalogItem[];
   underTen: CatalogItem[];
 }
@@ -192,19 +199,45 @@ export const UNDER_PRICE_MINOR = 50000; // ₹500
 export async function getHomeSections(): Promise<HomeSections> {
   "use cache";
   cacheTag(CATALOG_CACHE_TAG);
-  const { products } = await getRepositories();
+  const { products, merchandising } = await getRepositories();
   const { categories, summaries } = await summariseCategories();
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
-  const [newest, cheap] = await Promise.all([
-    products.search({ sort: "newest", limit: 4, offset: 0 }),
-    products.search({ sort: "price-asc", maxPriceMinor: UNDER_PRICE_MINOR, limit: 4, offset: 0 }),
+  const [featured, newest, cheap] = await Promise.all([
+    merchandising.listFeatured(HOME_SHELF_SIZE),
+    products.search({ sort: "newest", limit: HOME_SHELF_SIZE, offset: 0 }),
+    products.search({ sort: "price-asc", maxPriceMinor: UNDER_PRICE_MINOR, limit: HOME_SHELF_SIZE, offset: 0 }),
   ]);
-  const photos = await photosFor([...newest.items, ...cheap.items]);
+  // One photo query for every shelf on the page.
+  const photos = await photosFor([...featured, ...newest.items, ...cheap.items]);
   return {
     categories: summaries,
+    featured: featured.map((product) => toItem(product, categoriesById, photos)),
     newArrivals: newest.items.map((product) => toItem(product, categoriesById, photos)),
     underTen: cheap.items.map((product) => toItem(product, categoriesById, photos)),
   };
+}
+
+// Best sellers (ADR-021): ranked by units sold in the last 90 days. Cached for hours and NOT cleared
+// by each order: a shelf may lag sales by up to about an hour, which is fine, and a sale never
+// throws away the whole catalogue cache. Admin edits still clear it at once (the catalog tag), so an
+// archived product or hidden category leaves the shelf immediately.
+export async function getBestSellers(): Promise<CatalogItem[]> {
+  "use cache";
+  cacheTag(CATALOG_CACHE_TAG);
+  cacheLife("hours");
+  const { merchandising, categories } = await getRepositories();
+  const ranked = shelfOrEmpty(
+    await merchandising.listBestSellers({
+      since: bestSellerSince(new Date()),
+      soldStatuses: SOLD_ORDER_STATUSES,
+      limit: HOME_SHELF_SIZE,
+    }),
+    MIN_BEST_SELLERS,
+  );
+  if (ranked.length === 0) return [];
+  const categoriesById = new Map((await categories.list()).map((category) => [category.id, category]));
+  const photos = await photosFor(ranked);
+  return ranked.map((product) => toItem(product, categoriesById, photos));
 }
 
 // Header menu (ADR-018): shown categories in their admin-set order. Cached and tagged like the rest

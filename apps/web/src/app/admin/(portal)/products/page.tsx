@@ -95,6 +95,7 @@ async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, 
                 <span className="text-sm text-muted">{categoryName.get(product.categoryId) ?? "No category"}</span>
                 <span className="text-sm tabular-nums">{formatMoney(product.priceMinor, product.currency)}</span>
                 <Badge tone={statusTone(product.status)}>{statusLabel[product.status]}</Badge>
+                {product.featured && <Badge tone="neutral">Featured</Badge>}
               </Link>
             </li>
           ))}

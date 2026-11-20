@@ -22,4 +22,6 @@ export interface ProductAdminRepository {
   // Only if the row still has `expectedVersion`; otherwise ConflictError. Throws SlugTakenError.
   update(id: string, input: ProductInput, expectedVersion: string): Promise<AdminProduct>;
   setStatus(id: string, status: ProductStatus, expectedVersion: string): Promise<AdminProduct>;
+  // Same version check as setStatus (ADR-021).
+  setFeatured(id: string, featured: boolean, expectedVersion: string): Promise<AdminProduct>;
 }

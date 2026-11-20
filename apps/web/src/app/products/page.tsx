@@ -91,9 +91,11 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
     <form
       role="search"
       action="/products"
-      className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-surface-raised p-4 md:grid-cols-[minmax(12rem,1fr)_auto_6rem_6rem_auto_auto] md:items-end"
+      // Phones: 2 columns. Tablets: 4 columns in two rows (one row squashed the selects to
+      // "All categ" / "Best" at 768 px). Desktop: a single row.
+      className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-surface-raised p-4 md:grid-cols-4 md:items-end lg:grid-cols-[minmax(12rem,1fr)_auto_6rem_6rem_auto_auto]"
     >
-      <label className={`col-span-2 md:col-span-1 ${labelClass}`}>
+      <label className={`col-span-2 lg:col-span-1 ${labelClass}`}>
         Search
         <input
           name="q"
@@ -104,7 +106,7 @@ function Filters({ params, page }: { params: CatalogParams; page: CatalogPage })
           className={fieldClass}
         />
       </label>
-      <label className={`col-span-2 md:col-span-1 ${labelClass}`}>
+      <label className={`col-span-2 lg:col-span-1 ${labelClass}`}>
         Category
         <select name="category" defaultValue={page.category?.slug ?? ""} className={fieldClass}>
           <option value="">All categories</option>

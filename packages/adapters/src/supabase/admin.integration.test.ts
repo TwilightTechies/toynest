@@ -149,6 +149,20 @@ describe.skipIf(!ready)("Admin catalogue (RLS + optimistic concurrency)", () => 
     expect(archived.status).toBe("archived");
   });
 
+  it("only an admin can feature a product (ADR-021)", async () => {
+    const created = await admin.products.create(input({ slug: `admin-test-feat-${run}` }));
+    productIds.push(created.id);
+    const featured = await admin.products.setFeatured(created.id, true, created.version);
+    expect(featured.featured).toBe(true);
+    // Live, so the plain user can read it (public policy); the update policy still refuses them.
+    const live = await service.from("products").update({ status: "active" }).eq("id", created.id);
+    if (live.error) throw live.error;
+    const seen = await plain.products.get(created.id);
+    expect(seen?.featured).toBe(true);
+    await expect(plain.products.setFeatured(created.id, false, seen!.version)).rejects.toThrow(ConflictError);
+    expect((await admin.products.get(created.id))?.featured).toBe(true);
+  });
+
   it("a duplicate slug becomes SlugTakenError", async () => {
     const existing = await admin.products.create(input({ slug: `admin-test-dup-${run}` }));
     productIds.push(existing.id);

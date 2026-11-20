@@ -3,7 +3,7 @@
 import { attributeLabel, STATUS_TRANSITIONS, type ProductStatus, type StatusAction } from "@toynest/core";
 import { useActionState, useState } from "react";
 import { buttonClass, cardClass, fieldClass, labelClass } from "@/components/ui";
-import { changeStatus, saveProduct, type ProductFormState } from "./actions";
+import { changeStatus, saveProduct, setFeatured, type ProductFormState } from "./actions";
 import { ATTRIBUTE_FIELD_PREFIX } from "./form-fields";
 
 export interface CategoryOption {
@@ -203,3 +203,38 @@ export function StatusControls({ id, version, status }: { id: string; version: s
     </form>
   );
 }
+
+// Featured shelf on the home page (ADR-021). Any status may be featured, so a product can be lined up
+// before launch; the shop only shows it while it is published and its category is shown.
+export function FeaturedControl({
+  id,
+  version,
+  featured,
+  live,
+}: {
+  id: string;
+  version: string;
+  featured: boolean;
+  live: boolean;
+}) {
+  const [state, action, pending] = useActionState(setFeatured, initialState);
+  return (
+    <form action={action} className={`${cardClass} flex flex-col gap-3 p-5`}>
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="version" value={version} />
+      <input type="hidden" name="featured" value={featured ? "false" : "true"} />
+      <h2 className="font-display text-lg font-semibold">Home page</h2>
+      <Feedback state={state} />
+      <p className="text-sm">
+        {featured ? "Featured: shown on the home page's Featured shelf (newest 4 first)." : "Not featured."}
+        {featured && !live && " It will appear once the product is published and its category is shown."}
+      </p>
+      <div>
+        <button disabled={pending} className={buttonClass(featured ? "secondary" : "primary", "sm")}>
+          {featured ? "Remove from Featured" : "Feature on home page"}
+        </button>
+      </div>
+    </form>
+  );
+}
+

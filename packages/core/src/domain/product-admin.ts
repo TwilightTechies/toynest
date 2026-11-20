@@ -24,6 +24,8 @@ export const ProductInputSchema = z.object({
 export type ProductInput = z.infer<typeof ProductInputSchema>;
 
 export const AdminProductSchema = ProductSchema.extend({
+  // Shown on the home page's Featured shelf when also active and in a visible category (ADR-021).
+  featured: z.boolean(),
   // The row's updated_at exactly as the database returned it (microsecond precision). It is compared,
   // never parsed: a JS Date keeps only milliseconds and would never match.
   version: z.string().min(1),

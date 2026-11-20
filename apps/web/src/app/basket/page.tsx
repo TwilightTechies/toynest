@@ -46,7 +46,7 @@ async function Basket() {
 
 function Line({ line }: { line: BasketLineView }) {
   const stepClass =
-    "flex h-9 w-9 items-center justify-center rounded-full border border-border-strong text-lg font-semibold hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-border-strong disabled:hover:text-current";
+    "flex h-9 w-9 pointer-coarse:h-11 pointer-coarse:w-11 items-center justify-center rounded-full border border-border-strong text-lg font-semibold hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-border-strong disabled:hover:text-current";
   return (
     <li className={`flex gap-4 p-3 ${cardClass} ${line.available ? "" : "opacity-70"}`}>
       <div className="w-24 shrink-0 sm:w-32">
@@ -102,7 +102,7 @@ function Line({ line }: { line: BasketLineView }) {
           )}
           <form action={removeLine}>
             <input type="hidden" name="lineId" value={line.lineId} />
-            <button type="submit" className="text-sm font-semibold text-muted underline-offset-4 hover:text-accent hover:underline">
+            <button type="submit" className="-mr-2 px-2 text-sm font-semibold text-muted underline-offset-4 hover:text-accent hover:underline pointer-coarse:min-h-11">
               Remove
             </button>
           </form>

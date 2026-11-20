@@ -75,6 +75,10 @@ export function createSupabaseProductAdminRepository(client: SupabaseClient): Pr
     async setStatus(id, status, expectedVersion) {
       return conditionalUpdate(id, { status }, expectedVersion, "adminProducts.setStatus", "");
     },
+
+    async setFeatured(id, featured, expectedVersion) {
+      return conditionalUpdate(id, { featured }, expectedVersion, "adminProducts.setFeatured", "");
+    },
   };
 
   // Optimistic concurrency: the WHERE includes the version the admin loaded. Zero rows back means

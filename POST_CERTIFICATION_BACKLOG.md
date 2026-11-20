@@ -5,7 +5,7 @@ Deferred by ADR-001. Pick up after 7 Nov 2026.
 ## Phase order
 One phase per project session, each on its own `feat/` branch:
 
-1. ~~Storefront browsing~~ (done, ADR-012)
+1. ~~Storefront browsing~~ (done, ADR-012); ~~2a merchandising: featured + best sellers~~ (done, ADR-021); next 2b variants, 2c personalisation
 2. ~~Design foundation~~ (done, ADR-013)
 2a. ~~India localisation: INR, en-IN formatting~~ (done, ADR-014)
 3. ~~Cart~~ (done, ADR-015): basket, name personalisation, delivery by pincode zone
@@ -36,7 +36,7 @@ One phase per project session, each on its own `feat/` branch:
 
 ## Storefront
 - [x] Home page sections: hero, shop by category, new arrivals, under ₹500 (ADR-012, ADR-014)
-- [ ] Home page: featured and best sellers (needs a featured flag / order aggregate)
+- [x] Home page: Featured (admin-picked) and Best sellers (units sold, 90 days) (ADR-021)
 - [x] Product detail page, category browsing, price filter, sorting, pagination (ADR-012)
 - [ ] Product variants (colour/size) selection UI
 - [ ] Customised products: personalised text, colour, instructions, image upload (Supabase Storage)
@@ -60,7 +60,7 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Phase 3: categories: show/hide, order, menu labels, required details (ADR-018)
 - [ ] Category schedule (show from / hide after a date) for seasonal ranges
 - [ ] Stock and shipping zones
-- [ ] Featured flag (unblocks the home page "Featured" section)
+- [x] Featured flag on the product page and list (ADR-021)
 - [ ] Variants (colour/size)
 - [ ] Audit trail: who changed what (created_by / updated_by or a change log)
 - [ ] Dashboard: counts, sales summary, low-stock, recent orders

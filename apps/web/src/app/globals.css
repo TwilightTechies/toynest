@@ -27,10 +27,11 @@
 }
 
 /*
- * Theme choice (ADR-013): "auto" follows the device; a shopper's explicit choice sets
- * <html data-theme="light|dark"> (see theme-toggle.tsx and the inline script in layout.tsx).
+ * Theme choice (ADR-013; light default since 19 Nov 2026): the server renders <html data-theme="light">;
+ * choosing Dark sets data-theme="dark", and choosing Auto removes the attribute so the device decides
+ * (see theme-toggle.tsx and the inline script in layout.tsx).
  * Dark tokens therefore apply in two cases, and are written out twice (CSS has no way to share them):
- *   1. the device prefers dark and the shopper has not chosen light;
+ *   1. Auto is chosen (no data-theme) and the device prefers dark;
  *   2. the shopper chose dark.
  * color-scheme makes native controls (selects, scrollbars, date pickers) match the theme.
  */

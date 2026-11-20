@@ -17,6 +17,7 @@ const product: AdminProduct = {
   priceMinor: 79900,
   currency: "INR",
   status: "draft",
+  featured: false,
   attributes: {},
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

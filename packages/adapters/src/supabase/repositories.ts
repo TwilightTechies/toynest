@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import type { SupabaseClient } from "./client";
 import { toRepositoryError } from "./errors";
+import { createSupabaseMerchandisingRepository } from "./merchandising-repository";
 import { createSupabaseProductImageRepository } from "./product-image-repository";
 import {
   CART_COLUMNS,
@@ -204,5 +205,6 @@ export function createSupabaseRepositories(client: SupabaseClient) {
     carts: createSupabaseCartRepository(client),
     shippingZones: createSupabaseShippingZoneRepository(client),
     images: createSupabaseProductImageRepository(client),
+    merchandising: createSupabaseMerchandisingRepository(client),
   };
 }
