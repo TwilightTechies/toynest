@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getMenuCategories } from "@/lib/catalog";
+import { AccountLink } from "./account-link";
 import { BasketLink } from "./basket-link";
 import { Logo } from "./logo";
 import { MobileMenu, type NavLink } from "./mobile-menu";
@@ -30,6 +31,7 @@ export async function SiteHeader() {
         </nav>
         {/* Basket: always visible, on every screen size. ml-auto pushes it right when the nav is hidden. */}
         <div className="ml-auto flex items-center gap-1 xl:ml-0">
+          <AccountLink />
           <BasketLink />
           <MobileMenu links={[...navLinks, { href: "/support", label: "Help & support" }]} />
         </div>

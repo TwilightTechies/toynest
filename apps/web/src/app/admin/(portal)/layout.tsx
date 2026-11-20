@@ -9,6 +9,7 @@ const links = [
   { href: "/admin/products", label: "Products" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/settings", label: "Settings" },
   { href: "/admin/drafts/new", label: "AI drafts" },
   ...(mcpExplorerEnabled ? [{ href: "/admin/mcp", label: "MCP explorer" }] : []),
 ];

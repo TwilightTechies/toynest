@@ -5,7 +5,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { cardClass, touchLinkClass } from "@/components/ui";
+import { getSignedIn, isPhoneOtpEnabled } from "@/lib/account";
 import { getBasketView } from "@/lib/cart";
+import { PhoneCodeForm } from "../account/forms";
 import { CheckoutForm } from "./checkout-form";
 
 export const metadata: Metadata = { title: "Checkout · ToyNest", robots: { index: false } };
@@ -28,17 +30,44 @@ async function Checkout() {
   const basket = await getBasketView();
   // Nothing to buy, or something must be removed first: the basket page explains.
   if (!basket || basket.itemCount === 0 || basket.hasUnavailable) redirect("/basket");
+  const [signedIn, phoneEnabled] = await Promise.all([getSignedIn(), isPhoneOtpEnabled()]);
+  const customer = signedIn?.customer;
 
   return (
     <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+      <div className="flex flex-col gap-6">
+        {customer ? (
+          <p className={`${cardClass} p-4 text-sm`}>
+            Signed in as <strong>{customer.name}</strong>. This order will be saved to your account.
+          </p>
+        ) : phoneEnabled ? (
+          // Guests (ADR-022): optional sign-in with a code. Never automatic: typing a number alone
+          // must not open anyone's account. Hidden, and refused on the server, when the admin turns it off.
+          <section aria-labelledby="otp-heading" className={`${cardClass} p-5`}>
+            <h2 id="otp-heading" className="font-display text-lg font-semibold">
+              Have an account, or want one?
+            </h2>
+            <p className="mt-1 mb-4 text-sm text-muted">
+              Get a code on your mobile to sign in. Your basket comes with you. Or just fill in your details below.
+            </p>
+            <PhoneCodeForm next="/checkout" compact />
+          </section>
+        ) : null}
       <CheckoutForm
         // A fresh token per page view: submitting this form twice gives one order (ADR-019).
         checkoutToken={randomUUID()}
+        defaults={{
+          name: customer && customer.name !== "Customer" ? customer.name : "",
+          email: customer?.email ?? "",
+          // The checkout form takes 10 digits; the account stores +91 and 10 digits.
+          phone: customer?.phone?.replace(/^\+91/, "") ?? "",
+        }}
         defaultPincode={basket.pincode ?? ""}
         states={[...INDIAN_STATES]}
         codAllowed={basket.totalMinor <= COD_MAX_MINOR}
         codLimit={formatMoney(COD_MAX_MINOR)}
       />
+      </div>
 
       {/* Phones show the summary first, so the total is seen before "Place order" (which sits at the
           end of the form); from lg it moves to a sticky right-hand column. Source order stays form-first. */}

@@ -15,4 +15,9 @@ export interface CartRepository {
   setPincode(cartId: string, pincode: string | null): Promise<void>;
   // After a successful order (ADR-019). Deleting an unknown cart is not an error.
   delete(cartId: string): Promise<void>;
+  // Accounts (ADR-022): the signed-in customer's basket (the newest, if several), or null.
+  findForCustomer(customerId: string): Promise<Cart | null>;
+  // Makes a guest basket the customer's, but only if nobody owns it yet (or they already do).
+  // false = another account's basket (e.g. a stale cookie on a shared device): never merge it.
+  claimForCustomer(cartId: string, customerId: string): Promise<boolean>;
 }

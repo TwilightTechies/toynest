@@ -8,12 +8,15 @@ const initial: CheckoutFormState = { message: null, fieldErrors: {} };
 
 export function CheckoutForm({
   checkoutToken,
+  defaults,
   defaultPincode,
   states,
   codAllowed,
   codLimit,
 }: {
   checkoutToken: string;
+  // Prefilled for signed-in shoppers (ADR-022); empty strings for guests.
+  defaults: { name: string; email: string; phone: string };
   defaultPincode: string;
   states: string[];
   codAllowed: boolean;
@@ -46,17 +49,17 @@ export function CheckoutForm({
         <h2 className="font-display text-xl font-semibold sm:col-span-2">Delivery details</h2>
         <label className={`${labelClass} sm:col-span-2`}>
           Full name
-          <input name="name" required autoComplete="name" maxLength={80} defaultValue={value("name")} className={fieldClass} {...described("name")} />
+          <input name="name" required autoComplete="name" maxLength={80} defaultValue={value("name", defaults.name)} className={fieldClass} {...described("name")} />
           {errorFor("name")}
         </label>
         <label className={labelClass}>
           Mobile number
-          <input name="phone" required type="tel" inputMode="tel" autoComplete="tel" placeholder="98765 43210" defaultValue={value("phone")} className={fieldClass} {...described("phone")} />
+          <input name="phone" required type="tel" inputMode="tel" autoComplete="tel" placeholder="98765 43210" defaultValue={value("phone", defaults.phone)} className={fieldClass} {...described("phone")} />
           {errorFor("phone")}
         </label>
         <label className={labelClass}>
           Email
-          <input name="email" required type="email" autoComplete="email" defaultValue={value("email")} className={fieldClass} {...described("email")} />
+          <input name="email" required type="email" autoComplete="email" defaultValue={value("email", defaults.email)} className={fieldClass} {...described("email")} />
           {errorFor("email")}
         </label>
         <label className={`${labelClass} sm:col-span-2`}>

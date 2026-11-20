@@ -8,6 +8,9 @@ import { loadSampleSupport } from "@toynest/adapters/sample-support";
 import {
   createSupabaseCheckoutRepository,
   createSupabaseClient,
+  createSupabaseCustomerProvisioning,
+  createSupabaseSmsOutbox,
+  createSupabaseStoreSettingsAdmin,
   createSupabaseRepositories,
   listDemoCustomers,
   readSupabaseEnv,
@@ -18,6 +21,7 @@ import type {
   CategoryRepository,
   CheckoutOrderRepository,
   Customer,
+  CustomerProvisioning,
   CustomerRepository,
   MerchandisingRepository,
   OrderRepository,
@@ -25,6 +29,8 @@ import type {
   ProductImageRepository,
   ProductRepository,
   ShippingZoneRepository,
+  SmsOutbox,
+  StoreSettingsReader,
 } from "@toynest/core";
 import { dataDir, loadRootEnv } from "./env";
 
@@ -46,6 +52,13 @@ export interface Repositories {
   payments: PaymentProvider;
   // Demo-only list for the mock sign-in on /support.
   demoCustomers(): Promise<Customer[]>;
+  // Customer accounts (ADR-022), server-only (service role). null in sample mode: accounts need
+  // Supabase Auth, as the admin does.
+  accounts: {
+    provisioning: CustomerProvisioning;
+    settings: StoreSettingsReader;
+    smsOutbox: SmsOutbox;
+  } | null;
 }
 
 let serviceClient: SupabaseClient | undefined;
@@ -72,6 +85,11 @@ export async function getRepositories(): Promise<Repositories> {
       checkoutOrders: createSupabaseCheckoutRepository(client, payments.name),
       payments,
       demoCustomers: () => listDemoCustomers(client),
+      accounts: {
+        provisioning: createSupabaseCustomerProvisioning(client),
+        settings: createSupabaseStoreSettingsAdmin(client),
+        smsOutbox: createSupabaseSmsOutbox(client),
+      },
     };
   }
 
@@ -95,5 +113,6 @@ async function loadSampleRepositories(): Promise<Repositories> {
     checkoutOrders: createInMemoryCheckoutRepository(),
     payments: createMockPaymentProvider(),
     demoCustomers: async () => support.sampleCustomers,
+    accounts: null,
   };
 }

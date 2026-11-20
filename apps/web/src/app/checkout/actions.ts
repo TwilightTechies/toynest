@@ -4,6 +4,7 @@ import { COD_MAX_MINOR, formatMoney, type CheckoutResult } from "@toynest/core";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { clearCartCookie, readCartId } from "@/lib/cart";
+import { currentCustomerId } from "@/lib/account";
 import { getCheckoutService } from "@/lib/checkout";
 
 // Checkout actions (ADR-019). Public POST endpoints: every field is validated, and nothing
@@ -30,6 +31,8 @@ export async function placeOrder(_previous: CheckoutFormState, formData: FormDat
   const result = await checkout.placeOrder({
     cartId: await readCartId(),
     checkoutToken: token.data,
+    // ADR-022: from the verified session only. A form field can't attach an order to an account.
+    customerId: await currentCustomerId(),
     details: Object.fromEntries(DETAIL_FIELDS.map((key) => [key, values[key] ?? ""])),
     paymentMethod: values.paymentMethod,
   });

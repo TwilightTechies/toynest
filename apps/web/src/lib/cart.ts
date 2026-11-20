@@ -8,32 +8,12 @@ import {
   type CartRepository,
   type Product,
 } from "@toynest/core";
-import { cookies } from "next/headers";
-import { z } from "zod";
 import { toPhoto, type CatalogPhoto } from "./catalog";
 import { getRepositories } from "./data";
+import { readCartId, setCartCookie } from "./cart-cookie";
+import { currentCustomerId } from "./account";
 
-// The basket lives in the database; the browser holds only its random id (ADR-015).
-// httpOnly: page scripts can't read it. sameSite=lax: not sent on cross-site POSTs (CSRF), but kept
-// when a shopper follows a link back to the shop. secure in production (HTTPS only).
-export const CART_COOKIE = "toynest_cart";
-const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
-
-const cookieOptions = () =>
-  ({
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: CART_COOKIE_MAX_AGE,
-  }) as const;
-
-// The cookie is an external boundary: anything that isn't a uuid is treated as "no basket".
-export async function readCartId(): Promise<string | null> {
-  const value = (await cookies()).get(CART_COOKIE)?.value;
-  const parsed = z.uuid().safeParse(value);
-  return parsed.success ? parsed.data : null;
-}
+export { CART_COOKIE, clearCartCookie, readCartId, setCartCookie } from "./cart-cookie";
 
 async function currentCart(carts: CartRepository): Promise<Cart | null> {
   const id = await readCartId();
@@ -41,13 +21,17 @@ async function currentCart(carts: CartRepository): Promise<Cart | null> {
 }
 
 // For server actions that change the basket: the current cart, or a new one (and its cookie).
-// Created lazily, so browsing never creates empty carts.
+// Created lazily, so browsing never creates empty carts. A signed-in shopper with no basket cookie
+// (new device, cleared cookies) gets their account's basket back, or a new one that is theirs.
 export async function cartForWrite(): Promise<{ cart: Cart; carts: CartRepository }> {
   const { carts } = await getRepositories();
   const existing = await currentCart(carts);
   if (existing) return { cart: existing, carts };
-  const cart = await carts.create();
-  (await cookies()).set(CART_COOKIE, cart.id, cookieOptions());
+  const customerId = await currentCustomerId();
+  const owned = customerId ? await carts.findForCustomer(customerId) : null;
+  const cart = owned ?? (await carts.create());
+  if (customerId && !owned) await carts.claimForCustomer(cart.id, customerId);
+  await setCartCookie(cart.id);
   return { cart, carts };
 }
 
@@ -155,8 +139,3 @@ export async function getBasketCount(): Promise<number> {
   return priceCart({ lines: cart.lines, products: await withSaleStatus(rows), zone: null }).itemCount;
 }
 
-// After an order succeeds (ADR-019) the basket is deleted; the cookie goes too, so the shopper
-// starts fresh.
-export async function clearCartCookie(): Promise<void> {
-  (await cookies()).delete(CART_COOKIE);
-}

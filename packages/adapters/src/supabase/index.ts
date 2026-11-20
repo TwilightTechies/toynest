@@ -7,3 +7,6 @@ export * from "./product-image-repository";
 export * from "./category-admin-repository";
 export * from "./checkout-repository";
 export * from "./merchandising-repository";
+export * from "./session-client";
+export * from "./customer-session";
+export * from "./store-settings";
