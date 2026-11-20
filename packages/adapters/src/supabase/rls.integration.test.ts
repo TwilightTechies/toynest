@@ -178,7 +178,9 @@ describe.skipIf(!ready)("RLS (isolation layer 4)", () => {
     expect(cart.error).toBeNull();
     const cartId = (cart.data as { id: string }).id;
     try {
-      const product = await admin.from("products").select("id").eq("status", "active").limit(1).single();
+      // A fixed seeded product: "any active product" could be a parallel test's throwaway row that
+      // its cleanup deletes mid-test.
+      const product = await admin.from("products").select("id").eq("slug", "wooden-number-puzzle").single();
       await admin.from("cart_items").insert({ cart_id: cartId, product_id: (product.data as { id: string }).id, quantity: 1 });
 
       for (const client of [anonymous, asA]) {

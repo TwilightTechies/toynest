@@ -1,4 +1,3 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { AdminSession, AdminUser } from "@toynest/core";
 import { z } from "zod";
 import { toRepositoryError } from "./errors";
@@ -6,48 +5,19 @@ import { createSupabaseProductAdminRepository } from "./product-admin-repository
 import { createSupabaseProductImageAdminRepository } from "./product-image-repository";
 import { createSupabaseCategoryAdminRepository } from "./category-admin-repository";
 import { createSupabaseAdminOrderRepository } from "./checkout-repository";
+import { createSessionClient, type SessionClientOptions } from "./session-client";
+import { createSupabaseStoreSettingsAdmin, createSupabaseSmsOutbox } from "./store-settings";
 
-export type { CookieOptions as SessionCookieOptions };
-
-// The web app's cookie store, passed in so this package never imports Next.js.
-export interface SessionCookieJar {
-  getAll(): { name: string; value: string }[];
-  // Server components can't set cookies; the caller may ignore writes there (the proxy refreshes).
-  setAll(cookies: { name: string; value: string; options: CookieOptions }[]): void;
-}
-
-export interface AdminContextOptions {
-  url: string;
-  // The public key: every request then runs as the signed-in user, subject to RLS.
-  anonKey: string;
-  cookies: SessionCookieJar;
-  secureCookies: boolean;
-  timeoutMs?: number;
-}
+export type { SessionCookieJar, SessionCookieOptions } from "./session-client";
+export type AdminContextOptions = SessionClientOptions;
 
 const EmailSchema = z.email();
 
 // ADR-016. One Supabase client per request, carrying the admin's session from httpOnly cookies.
 // The session, the admin product repository and categories all share it, so every database call is
 // made as this user and RLS applies (isolation layer 4), never with the service role.
-export function createSupabaseAdminContext({ url, anonKey, cookies, secureCookies, timeoutMs = 5000 }: AdminContextOptions) {
-  const client = createServerClient(url, anonKey, {
-    cookies: {
-      getAll: () => cookies.getAll(),
-      // Hardened regardless of the library's defaults: page scripts can't read the tokens (httpOnly),
-      // cross-site POSTs don't carry them (lax), and they travel over HTTPS only in production.
-      setAll: (list) =>
-        cookies.setAll(
-          list.map((cookie) => ({
-            ...cookie,
-            options: { ...cookie.options, httpOnly: true, sameSite: "lax", secure: secureCookies, path: "/" },
-          })),
-        ),
-    },
-    global: {
-      fetch: (input, init) => fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(timeoutMs) }),
-    },
-  });
+export function createSupabaseAdminContext(options: AdminContextOptions) {
+  const client = createSessionClient(options);
 
   const session: AdminSession = {
     async signIn(email, password) {
@@ -87,6 +57,9 @@ export function createSupabaseAdminContext({ url, anonKey, cookies, secureCookie
     // All categories, hidden ones included: admins prepare seasonal ranges before showing them.
     categories: createSupabaseCategoryAdminRepository(client),
     orders: createSupabaseAdminOrderRepository(client),
+    // Shop switches and the mock SMS outbox (ADR-022), both behind admin RLS policies.
+    settings: createSupabaseStoreSettingsAdmin(client),
+    smsOutbox: createSupabaseSmsOutbox(client),
   };
 }
 

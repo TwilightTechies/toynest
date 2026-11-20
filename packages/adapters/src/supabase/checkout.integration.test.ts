@@ -21,6 +21,7 @@ describe.skipIf(!ready)("Checkout orders (place_order, payments, RLS)", () => {
   const draft = (overrides: Partial<OrderDraft> = {}): OrderDraft => ({
     checkoutToken: randomUUID(),
     cartId: randomUUID(),
+    customerId: null,
     details: {
       name: "Test Shopper",
       email: "checkout-test@example.com",

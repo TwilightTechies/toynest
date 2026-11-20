@@ -136,6 +136,31 @@ export function createSupabaseCartRepository(client: SupabaseClient): CartReposi
       const result = await client.from("carts").delete().eq("id", cartId);
       if (result.error) throw toRepositoryError(result, "carts.delete");
     },
+    // Accounts (ADR-022). Server-only like every cart query: the service role, scoped by customer id.
+    async findForCustomer(customerId) {
+      if (!isUuid(customerId)) return null;
+      const result = await client
+        .from("carts")
+        .select(CART_COLUMNS)
+        .eq("customer_id", customerId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (result.error) throw toRepositoryError(result, "carts.findForCustomer");
+      return result.data ? toCart(result.data) : null;
+    },
+    async claimForCustomer(cartId, customerId) {
+      if (!isUuid(cartId) || !isUuid(customerId)) return false;
+      // One conditional statement, so two sign-ins racing for the same basket can't both win.
+      const result = await client
+        .from("carts")
+        .update({ customer_id: customerId })
+        .eq("id", cartId)
+        .or(`customer_id.is.null,customer_id.eq.${customerId}`)
+        .select("id");
+      if (result.error) throw toRepositoryError(result, "carts.claimForCustomer");
+      return z.array(z.unknown()).parse(result.data).length === 1;
+    },
   };
 }
 
@@ -189,9 +214,10 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
   };
 }
 
-// Demo-only helper for the mock sign-in list (not a core port).
+// Demo-only helper for the mock sign-in list (not a core port). Only customers WITHOUT a login:
+// real accounts (ADR-022) must never appear in a picker anyone can use to impersonate them.
 export async function listDemoCustomers(client: SupabaseClient, limit = 10): Promise<Customer[]> {
-  const result = await client.from("customers").select(CUSTOMER_COLUMNS).order("name").limit(limit);
+  const result = await client.from("customers").select(CUSTOMER_COLUMNS).is("auth_user_id", null).order("name").limit(limit);
   if (result.error) throw toRepositoryError(result, "customers.listDemo");
   return z.array(z.unknown()).parse(result.data).map(toCustomer);
 }

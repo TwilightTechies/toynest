@@ -13,7 +13,7 @@ One phase per project session, each on its own `feat/` branch:
 3b. ~~Admin 2: product photos, up to 8 per product, PDP gallery~~ (done, ADR-017)
 3c. ~~Admin 3: categories: create/edit, show/hide (seasonal), menu order and labels~~ (done, ADR-018)
 4. ~~Checkout~~ (done, ADR-019): guest orders, mock online payment + Cash on Delivery
-5. Auth: switches the composition root to user-scoped clients
+5. ~~Auth: customer accounts~~ (done, ADR-022): email + password or mobile code (admin switch, mock SMS), account page and order history through RLS, basket follows the account
 6. **Design polish**: details across every page once all flows exist
 
 ## Design foundation (responsive web; no native app)
@@ -48,7 +48,12 @@ One phase per project session, each on its own `feat/` branch:
 - [ ] Real payment gateway (e.g. Razorpay) behind the PaymentProvider port, with webhooks
 - [ ] Order confirmation emails (needs the notification provider)
 - [ ] Clean up orders left in awaiting_payment (scheduled job)
-- [ ] Customer account: registration, password recovery, profile, order history UI
+- [x] Customer account: registration, email confirmation, password recovery, order history (ADR-022)
+- [x] Mobile number sign-in with a one-time code, switchable by admins; offered (never automatic) at checkout (ADR-022)
+- [ ] Link earlier guest orders to an account by verified email/phone (`claim_guest_orders`, ADR-022 extension point)
+- [ ] Real SMS provider (MSG91/Twilio, DLT registration) replacing the mock Send SMS hook
+- [ ] Profile editing and an address book
+- [ ] Support assistant on the real customer session (replaces the demo picker)
 
 ## Admin
 - [x] Admin sign-in (Supabase Auth, `admin_users` + `is_admin()`, RLS write policies) (ADR-016)

@@ -25,6 +25,8 @@ export async function loadShippingZones(filePath: string): Promise<ShippingZoneR
 // Same behaviour as the Supabase adapter; the shared contract suite checks both.
 export function createInMemoryCartRepository(): CartRepository {
   const carts = new Map<string, Cart>();
+  // Which customer owns a basket (accounts need Supabase, but the port stays complete here).
+  const owners = new Map<string, string>();
   const copy = (cart: Cart): Cart => ({ ...cart, lines: cart.lines.map((line) => ({ ...line })) });
 
   return {
@@ -66,6 +68,19 @@ export function createInMemoryCartRepository(): CartRepository {
     },
     async delete(cartId) {
       carts.delete(cartId);
+      owners.delete(cartId);
+    },
+    async findForCustomer(customerId) {
+      const owned = [...owners].filter(([, owner]) => owner === customerId).map(([cartId]) => carts.get(cartId));
+      const cart = owned.at(-1);
+      return cart ? copy(cart) : null;
+    },
+    async claimForCustomer(cartId, customerId) {
+      if (!carts.has(cartId)) return false;
+      const owner = owners.get(cartId);
+      if (owner && owner !== customerId) return false;
+      owners.set(cartId, customerId);
+      return true;
     },
   };
 }

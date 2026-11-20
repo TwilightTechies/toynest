@@ -11,7 +11,7 @@ import { toRepositoryError } from "./errors";
 
 const UNIQUE_VIOLATION = "23505";
 
-const CHECKOUT_ORDER_COLUMNS =
+export const CHECKOUT_ORDER_COLUMNS =
   "id, order_number, status, payment_method, payment_status, placed_at, cart_id, subtotal_minor, delivery_minor, " +
   "total_minor, currency, zone_name, contact_name, contact_email, contact_phone, address_line1, address_line2, city, " +
   "state, pincode, order_items(product_slug, product_name, unit_price_minor, quantity, personalisation_name, created_at)";
@@ -49,7 +49,7 @@ const CheckoutRowSchema = z.object({
   ),
 });
 
-function toCheckoutOrder(row: unknown): CheckoutOrder {
+export function toCheckoutOrder(row: unknown): CheckoutOrder {
   const r = CheckoutRowSchema.parse(row);
   return CheckoutOrderSchema.parse({
     id: r.id,
@@ -108,6 +108,8 @@ export function createSupabaseCheckoutRepository(client: SupabaseClient, provide
         payload: {
           checkout_token: draft.checkoutToken,
           cart_id: draft.cartId,
+          // From the server's verified session (ADR-022); null = guest.
+          customer_id: draft.customerId,
           status: draft.status,
           payment_method: draft.paymentMethod,
           payment_status: draft.paymentStatus,

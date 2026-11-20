@@ -70,6 +70,8 @@ export function createCheckoutService({ carts, products, categories, zones, orde
     async placeOrder(input: {
       cartId: string | null;
       checkoutToken: string;
+      // From the verified session only (ADR-022); null or absent = guest.
+      customerId?: string | null;
       details: Record<string, unknown>;
       paymentMethod: unknown;
     }): Promise<CheckoutResult> {
@@ -106,6 +108,7 @@ export function createCheckoutService({ carts, products, categories, zones, orde
       const draft: OrderDraft = {
         checkoutToken: input.checkoutToken,
         cartId: cart.id,
+        customerId: input.customerId ?? null,
         details,
         paymentMethod: method.data,
         // COD orders are confirmed straight away; online ones wait for the payment.

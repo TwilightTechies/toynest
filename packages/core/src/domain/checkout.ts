@@ -66,6 +66,9 @@ export interface OrderDraft {
   // Random per checkout page view: the same token always yields the same order (idempotency).
   checkoutToken: string;
   cartId: string;
+  // The signed-in customer (ADR-022), taken from the server's verified session, never from the form.
+  // null = guest checkout.
+  customerId: string | null;
   details: CheckoutDetails;
   paymentMethod: PaymentMethod;
   status: z.infer<typeof OrderStatusSchema>;
