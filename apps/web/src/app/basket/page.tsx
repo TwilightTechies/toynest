@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { PincodeForm } from "@/components/pincode-form";
 import { ProductCardPhoto } from "@/components/product-photo";
 import { buttonClass, cardClass } from "@/components/ui";
 import { getBasketView, type BasketLineView, type BasketView } from "@/lib/cart";
@@ -115,9 +114,7 @@ function Line({ line }: { line: BasketLineView }) {
 function Summary({ basket }: { basket: BasketView }) {
   return (
     <aside aria-label="Order summary" className={`flex flex-col gap-5 p-5 lg:sticky lg:top-24 ${cardClass}`}>
-      <PincodeForm pincode={basket.pincode} />
-
-      <dl className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
+      <dl className="flex flex-col gap-2 text-sm">
         <div className="flex justify-between">
           <dt className="text-muted">
             Subtotal ({basket.itemCount} item{basket.itemCount === 1 ? "" : "s"})
@@ -125,27 +122,14 @@ function Summary({ basket }: { basket: BasketView }) {
           <dd className="font-semibold tabular-nums">{basket.subtotal}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-muted">Delivery{basket.zoneName ? ` · ${basket.zoneName}` : ""}</dt>
-          <dd className="text-right font-semibold tabular-nums">{basket.delivery ?? "Enter pincode"}</dd>
+          <dt className="text-muted">Delivery</dt>
+          <dd className="text-right font-semibold tabular-nums">Calculated at checkout</dd>
         </div>
         <div className="mt-2 flex justify-between border-t border-border pt-3 text-base">
           <dt className="font-semibold">Total</dt>
-          <dd className="font-bold tabular-nums">{basket.total}</dd>
+          <dd className="font-bold tabular-nums">{basket.subtotal}</dd>
         </div>
       </dl>
-
-      {basket.freeDeliveryRemaining && (
-        <p className="rounded-xl bg-sage-soft px-4 py-3 text-sm text-sage-strong">
-          Add <strong>{basket.freeDeliveryRemaining}</strong> more for free delivery
-          {basket.zoneName ? ` to ${basket.zoneName}` : ""}.
-        </p>
-      )}
-      {basket.delivery === "Free" && basket.itemCount > 0 && (
-        <p className="rounded-xl bg-sage-soft px-4 py-3 text-sm text-sage-strong">You get free delivery.</p>
-      )}
-      {basket.delivery === null && (
-        <p className="text-sm text-muted">Delivery charges depend on your pincode.</p>
-      )}
 
       {basket.hasUnavailable ? (
         <p className="text-sm">Remove the items that are no longer available to check out.</p>
