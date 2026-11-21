@@ -18,7 +18,8 @@ function buildWhatsAppUrl(name: string, phone: string, city: string, state: stri
     `Delivery to: ${city}, ${state} – ${pincode}\n` +
     `Payment: Cash on Delivery\n\n` +
     `Please confirm my order. Thank you! 🙏`;
-  return `https://web.whatsapp.com/send?phone=${WHATSAPP_STORE_NUMBER}&text=${encodeURIComponent(message)}`;
+  // wa.me opens the WhatsApp app on mobile and WhatsApp Web on desktop
+  return `https://wa.me/${WHATSAPP_STORE_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
 export function CheckoutForm({
@@ -77,7 +78,7 @@ export function CheckoutForm({
     const stateVal = (form.elements.namedItem("state") as HTMLSelectElement)?.value ?? "";
     const pincode = (form.elements.namedItem("pincode") as HTMLInputElement)?.value  ?? "";
 
-    window.open(buildWhatsAppUrl(name, phone, city, stateVal, pincode), "_blank", "noopener,noreferrer");
+    window.location.href = buildWhatsAppUrl(name, phone, city, stateVal, pincode);
 
     setShowConfirm(false);
     const formData = new FormData(form);
