@@ -4,7 +4,7 @@ import { startTransition, useActionState, useEffect, useRef, useState } from "re
 import { buttonClass, cardClass, fieldClass, labelClass } from "@/components/ui";
 import { placeOrder, type CheckoutFormState } from "./actions";
 
-const WHATSAPP_STORE_NUMBER = "919884246030";
+const WHATSAPP_STORE_NUMBER = "919620691261";
 const initial: CheckoutFormState = { message: null, fieldErrors: {} };
 
 function buildWhatsAppUrl(name: string, phone: string, city: string, state: string, pincode: string): string {
