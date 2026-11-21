@@ -196,7 +196,7 @@ export function CheckoutForm({
               Confirm your order?
             </h2>
             <p className="mt-2 text-sm text-muted">
-              Your order will be placed and you'll be taken to WhatsApp to confirm with us. You'll pay cash when it's delivered.
+              Your order will be placed and you&apos;ll be taken to WhatsApp to confirm with us. You&apos;ll pay cash when it&apos;s delivered.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <button
