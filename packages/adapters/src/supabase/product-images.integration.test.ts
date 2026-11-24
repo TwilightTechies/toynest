@@ -63,6 +63,7 @@ describe.skipIf(!ready)("Product photos (Storage + RLS)", () => {
       description: "",
       categoryId: (category.data as { id: string }).id,
       priceMinor: 10000,
+      stock: null,
       attributes: {},
     });
     productId = product.id;

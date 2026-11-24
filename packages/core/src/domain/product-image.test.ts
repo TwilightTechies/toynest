@@ -11,6 +11,7 @@ import { createProductImageService } from "./product-image-service";
 const product: AdminProduct = {
   id: randomUUID(),
   slug: "wooden-stacker",
+  stock: null,
   name: "Wooden Stacker",
   description: "",
   categoryId: randomUUID(),

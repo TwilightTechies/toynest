@@ -1,10 +1,12 @@
-import { formatMoney, ProductStatusSchema } from "@toynest/core";
+import { availability, formatMoney, ProductStatusSchema, type Stock } from "@toynest/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { z } from "zod";
 import { Badge, buttonClass, cardClass, fieldClass, labelClass } from "@/components/ui";
+import { Toast } from "@/components/toast";
 import { requireAdmin } from "@/lib/admin";
+import { RowActions } from "./row-actions";
 import { statusLabel, statusTone } from "./status";
 
 export const metadata: Metadata = { title: "Products · ToyNest admin" };
@@ -17,7 +19,27 @@ const ListParamsSchema = z.object({
   status: ProductStatusSchema.optional().catch(undefined),
   category: z.uuid().optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(1000).catch(1),
+  // Set by the create actions' redirect: the product to confirm in a toast.
+  created: z.uuid().optional().catch(undefined),
+  // Set by the delete and list-archive redirects (ADR-023).
+  deleted: z.literal("1").optional().catch(undefined),
+  archived: z.literal("1").optional().catch(undefined),
 });
+
+// Admin view of stock (ADR-023): nothing when not tracked.
+function StockBadge({ stock }: { stock: Stock }) {
+  const state = availability(stock);
+  switch (state.kind) {
+    case "untracked":
+      return null;
+    case "sold_out":
+      return <Badge tone="neutral">Sold out</Badge>;
+    case "low":
+      return <Badge tone="neutral">Low: {state.units} left</Badge>;
+    case "in_stock":
+      return <span className="text-sm text-muted tabular-nums">{state.units} in stock</span>;
+  }
+}
 
 export default function AdminProductsPage({ searchParams }: PageProps<"/admin/products">) {
   return (
@@ -36,12 +58,15 @@ export default function AdminProductsPage({ searchParams }: PageProps<"/admin/pr
 }
 
 async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, "searchParams">) {
-  const { context } = await requireAdmin();
+  const { context, catalogue } = await requireAdmin();
   const params = ListParamsSchema.parse(await searchParams);
-  const [{ items, total }, categories] = await Promise.all([
+  const [{ items, total }, categories, created] = await Promise.all([
     context.products.list({ text: params.q, status: params.status, categoryId: params.category, limit: PAGE_SIZE, offset: (params.page - 1) * PAGE_SIZE }),
     context.categories.list(),
+    params.created ? context.products.get(params.created) : null,
   ]);
+  // Which rows were ever ordered: those can only be archived, the rest deleted (ADR-023).
+  const ordered = await catalogue.orderedAmong(items.map((product) => product.id));
   const categoryName = new Map(categories.map((category) => [category.id, category.name]));
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageHref = (page: number) => {
@@ -56,6 +81,9 @@ async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, 
 
   return (
     <>
+      {created && <Toast message={`“${created.name}” was added as a draft.`} clearParam="created" />}
+      {params.deleted && <Toast message="Product deleted." clearParam="deleted" />}
+      {params.archived && <Toast message="Product archived: it's hidden from the shop and can be restored." clearParam="archived" />}
       {/* A plain GET form: filters live in the URL, like the storefront (ADR-012). */}
       <form className="mt-6 flex flex-wrap items-end gap-3">
         <label className={`${labelClass} min-w-48 flex-1`}>
@@ -85,18 +113,25 @@ async function ProductList({ searchParams }: Pick<PageProps<"/admin/products">, 
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {items.map((product) => (
-            <li key={product.id}>
-              <Link
-                href={`/admin/products/${product.id}`}
-                className={`${cardClass} flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:border-accent`}
-              >
+            <li
+              key={product.id}
+              className={`${cardClass} flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 has-[a:hover]:border-accent ${product.id === created?.id ? "border-accent" : ""}`}
+            >
+              {/* The link covers the details; the action sits beside it, so tapping it never navigates. */}
+              <Link href={`/admin/products/${product.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
                 {/* Phones: the name gets its own line; the details wrap underneath. */}
                 <span className="w-full min-w-0 font-semibold sm:w-auto sm:flex-1">{product.name}</span>
                 <span className="text-sm text-muted">{categoryName.get(product.categoryId) ?? "No category"}</span>
                 <span className="text-sm tabular-nums">{formatMoney(product.priceMinor, product.currency)}</span>
+                <StockBadge stock={product.stock} />
                 <Badge tone={statusTone(product.status)}>{statusLabel[product.status]}</Badge>
                 {product.featured && <Badge tone="neutral">Featured</Badge>}
               </Link>
+              {!ordered.has(product.id) ? (
+                <RowActions id={product.id} version={product.version} name={product.name} mode="delete" />
+              ) : product.status !== "archived" ? (
+                <RowActions id={product.id} version={product.version} name={product.name} mode="archive" />
+              ) : null}
             </li>
           ))}
         </ul>

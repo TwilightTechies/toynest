@@ -21,6 +21,8 @@ export interface ProductFormValues {
   description: string;
   categoryId: string;
   price: string;
+  // Units on hand as typed; "" = not tracked (ADR-023).
+  stock: string;
   attributes: Record<string, string>;
 }
 
@@ -108,6 +110,22 @@ function Fields({
             defaultValue={value("price", product.price)}
             className={fieldClass}
           />
+        </label>
+        <label className={labelClass}>
+          Stock
+          <input
+            name="stock"
+            inputMode="numeric"
+            pattern="[0-9,]*"
+            maxLength={6}
+            placeholder="Not tracked"
+            aria-describedby="stock-hint"
+            defaultValue={value("stock", product.stock)}
+            className={fieldClass}
+          />
+          <span id="stock-hint" className="text-xs font-normal text-muted">
+            Units on hand. Leave empty to sell without a limit. Orders reduce it automatically.
+          </span>
         </label>
         <label className={`${labelClass} sm:col-span-2`}>
           Category

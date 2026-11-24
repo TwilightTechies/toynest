@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { ConflictError, SlugTakenError } from "../errors";
+import { ConflictError, HasOrdersError, SlugTakenError } from "../errors";
 import type { ProductAdminRepository } from "../ports/product-admin-repository";
 import type { Category } from "./category";
 import type { ProductStatus } from "./product";
@@ -24,6 +24,7 @@ const completeInput = (overrides: Partial<ProductInput> = {}): ProductInput => (
   categoryId: toys.id,
   priceMinor: 89900,
   attributes: { ageRange: "1-3 years", material: "Wood" },
+  stock: null,
   ...overrides,
 });
 
@@ -77,8 +78,10 @@ describe("checkPublishable", () => {
 });
 
 // Minimal fake that behaves like the adapter: versions change on every write, slugs are unique.
-function fakeRepository(): ProductAdminRepository & { rows: Map<string, AdminProduct> } {
+function fakeRepository(): ProductAdminRepository & { rows: Map<string, AdminProduct>; ordered: Set<string> } {
   const rows = new Map<string, AdminProduct>();
+  // Product ids with order lines: the database trigger refuses to delete these.
+  const ordered = new Set<string>();
   let clock = 0;
   const stamp = () => `v${++clock}`;
   const assertSlugFree = (slug: string, id?: string) => {
@@ -93,6 +96,7 @@ function fakeRepository(): ProductAdminRepository & { rows: Map<string, AdminPro
   };
   return {
     rows,
+    ordered,
     async list() {
       return { items: [...rows.values()], total: rows.size };
     },
@@ -115,6 +119,15 @@ function fakeRepository(): ProductAdminRepository & { rows: Map<string, AdminPro
     },
     async setFeatured(id, featured, expected) {
       return save(id, { featured }, expected);
+    },
+    async orderedAmong(ids) {
+      return new Set(ids.filter((id) => ordered.has(id)));
+    },
+    async delete(id, expected) {
+      const row = rows.get(id);
+      if (!row || row.version !== expected) throw new ConflictError();
+      if (ordered.has(id)) throw new HasOrdersError(id);
+      rows.delete(id);
     },
   };
 }
@@ -236,5 +249,61 @@ describe("featuring a product (ADR-021)", () => {
     if (!created.ok) throw new Error("setup failed");
     const same = await service.setFeatured(created.product.id, false, created.product.version);
     expect(same.ok && same.product.version).toBe(created.product.version);
+  });
+});
+
+describe("deleting products (ADR-023)", () => {
+  it("deletes a product that was never ordered", async () => {
+    const { repo, service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup");
+    expect(await service.delete(created.product.id, created.product.version)).toEqual({ ok: true, name: "Wooden Rainbow Stacker" });
+    expect(repo.rows.has(created.product.id)).toBe(false);
+  });
+
+  it("refuses to delete an ordered product, so it can only be archived", async () => {
+    const { repo, service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup");
+    repo.ordered.add(created.product.id);
+    expect(await service.delete(created.product.id, created.product.version)).toEqual({ ok: false, reason: "has_orders" });
+    expect(repo.rows.has(created.product.id)).toBe(true);
+  });
+
+  it("maps the database's refusal too (an order placed after the check)", async () => {
+    const { repo, service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup");
+    repo.orderedAmong = async () => new Set();
+    repo.ordered.add(created.product.id);
+    expect(await service.delete(created.product.id, created.product.version)).toEqual({ ok: false, reason: "has_orders" });
+  });
+
+  it("refuses a stale version and a missing product", async () => {
+    const { service } = setup();
+    const created = await service.create(completeInput());
+    if (!created.ok) throw new Error("setup");
+    await service.update(created.product.id, completeInput({ description: "Changed" }), created.product.version);
+    expect(await service.delete(created.product.id, created.product.version)).toEqual({ ok: false, reason: "conflict" });
+    expect(await service.delete(randomUUID(), "v1")).toEqual({ ok: false, reason: "not_found" });
+  });
+});
+
+describe("stock on products (ADR-023)", () => {
+  it("saves a stock level and clears it back to not tracked", async () => {
+    const { service } = setup();
+    const created = await service.create(completeInput({ stock: 12 }));
+    if (!created.ok) throw new Error("setup");
+    expect(created.product.stock).toBe(12);
+    const cleared = await service.update(created.product.id, completeInput({ stock: null }), created.product.version);
+    expect(cleared.ok && cleared.product.stock).toBeNull();
+  });
+
+  it("rejects negative or fractional stock", async () => {
+    const { service } = setup();
+    for (const stock of [-1, 2.5, 100_000]) {
+      const result = await service.create(completeInput({ stock }));
+      expect(result.ok).toBe(false);
+    }
   });
 });

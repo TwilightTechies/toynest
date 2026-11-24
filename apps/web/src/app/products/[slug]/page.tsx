@@ -5,7 +5,8 @@ import { Suspense } from "react";
 import { ProductGallery } from "@/components/product-gallery";
 import { AddToBasketForm } from "@/components/add-to-basket-form";
 import { Badge, touchLinkClass } from "@/components/ui";
-import { getProduct } from "@/lib/catalog";
+import { availability } from "@toynest/core";
+import { getProduct, getStock, type ProductDetail } from "@/lib/catalog";
 
 type Params = Promise<{ slug: string }>;
 
@@ -59,7 +60,11 @@ async function Product({ params }: { params: Params }) {
           <p className="mt-3 text-2xl font-bold tabular-nums">{product.price}</p>
           <p className="mt-5 leading-relaxed text-foreground/90">{product.description}</p>
 
-          <AddToBasketForm slug={product.slug} personalisable={product.personalisable} />
+          {/* Stock is live (uncached); while it loads, the plain form shows, and the server still
+              checks stock when the button is pressed (ADR-023). */}
+          <Suspense fallback={<AddToBasketForm slug={product.slug} personalisable={product.personalisable} />}>
+            <Purchase product={product} />
+          </Suspense>
 
           {product.attributes.length > 0 && (
             <section aria-labelledby="details-heading" className="mt-8 border-t border-border pt-6">
@@ -79,5 +84,28 @@ async function Product({ params }: { params: Params }) {
         </div>
       </div>
     </article>
+  );
+}
+
+async function Purchase({ product }: { product: ProductDetail }) {
+  const state = availability(await getStock(product.id));
+  if (state.kind === "sold_out") {
+    return (
+      <p role="status" className="mt-6 rounded-xl bg-surface px-4 py-3 font-semibold">
+        Sold out. Check back soon.
+      </p>
+    );
+  }
+  return (
+    <>
+      {state.kind === "low" && (
+        <p className="mt-4 text-sm font-semibold text-sage-strong">Only {state.units} left</p>
+      )}
+      <AddToBasketForm
+        slug={product.slug}
+        personalisable={product.personalisable}
+        maxQuantity={state.kind === "untracked" ? undefined : state.units}
+      />
+    </>
   );
 }

@@ -58,14 +58,15 @@ export function toProduct(row: unknown): Product {
 }
 
 // Admin view: the same row plus updated_at, kept verbatim as the optimistic-concurrency version,
-// and the featured flag (ADR-021), which only the admin needs to see.
-export const ADMIN_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS}, updated_at, featured`;
+// the featured flag (ADR-021) and the stock level (ADR-023; null = not tracked).
+export const ADMIN_PRODUCT_COLUMNS = `${PRODUCT_COLUMNS}, updated_at, featured, stock`;
 
 export function toAdminProduct(row: unknown): AdminProduct {
-  const extra = z.object({ updated_at: z.string().min(1), featured: z.boolean() }).parse(row);
+  const extra = z.object({ updated_at: z.string().min(1), featured: z.boolean(), stock: z.number().int().nullable() }).parse(row);
   return AdminProductSchema.parse({
     ...toProduct(row),
     featured: extra.featured,
+    stock: extra.stock,
     version: extra.updated_at,
     updatedAt: toIsoUtc(extra.updated_at),
   });

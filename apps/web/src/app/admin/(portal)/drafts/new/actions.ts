@@ -72,6 +72,8 @@ export async function saveDraftAsProduct(_previous: SaveDraftState, formData: Fo
     priceMinor: 0,
     // Free-form names from the model stay as extra fields for the admin to check or clear.
     attributes: Object.fromEntries(draft.attributes.map((a) => [a.name.slice(0, 40), a.value.slice(0, 100)])),
+    // Stock is the admin's to enter; not tracked until then (ADR-023).
+    stock: null,
   });
   if (!result.ok) {
     return {
@@ -81,5 +83,6 @@ export async function saveDraftAsProduct(_previous: SaveDraftState, formData: Fo
           : "The draft doesn't fit the product form. Create the product by hand instead.",
     };
   }
-  redirect(`/admin/products/${result.product.id}?saved=1`);
+  // Same as a hand-made product: back to the list with a toast. Failures above keep the admin here.
+  redirect(`/admin/products?created=${result.product.id}`);
 }

@@ -29,7 +29,7 @@ export default function CheckoutPage() {
 async function Checkout() {
   const basket = await getBasketView();
   // Nothing to buy, or something must be removed first: the basket page explains.
-  if (!basket || basket.itemCount === 0 || basket.hasUnavailable) redirect("/basket");
+  if (!basket || basket.itemCount === 0 || basket.hasUnavailable || basket.hasStockProblem) redirect("/basket");
   const [signedIn, phoneEnabled] = await Promise.all([getSignedIn(), isPhoneOtpEnabled()]);
   const customer = signedIn?.customer;
 

@@ -86,6 +86,7 @@ describe.skipIf(!ready)("Category visibility and admin (RLS)", () => {
       description: "",
       categoryId: categoryId!,
       priceMinor: 19900,
+      stock: null,
       attributes: { size: "10 cm" },
     });
     productId = product.id;

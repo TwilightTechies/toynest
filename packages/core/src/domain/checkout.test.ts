@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { ConflictError } from "../errors";
+import { ConflictError, OutOfStockError } from "../errors";
 import type { CartRepository } from "../ports/cart-repository";
 import type { CheckoutOrderRepository, PaymentCharge, PaymentProvider, PaymentResult } from "../ports/checkout";
 import type { Cart } from "./cart";
@@ -46,7 +46,11 @@ const details = {
   pincode: "560001",
 };
 
-function setup(catalog: Product[], opts: { zones?: ShippingZone[]; outcome?: PaymentResult["status"]; shown?: Category[] } = {}) {
+function setup(
+  catalog: Product[],
+  // stock: units per product id, enforced by the fake place() like place_order() does (ADR-023).
+  opts: { zones?: ShippingZone[]; outcome?: PaymentResult["status"]; shown?: Category[]; stock?: Map<string, number> } = {},
+) {
   const carts = new Map<string, Cart>();
   const cartRepo = {
     async get(id: string) {
@@ -64,6 +68,14 @@ function setup(catalog: Product[], opts: { zones?: ShippingZone[]; outcome?: Pay
     async place(draft) {
       const existing = [...orders.values()].find((o) => o.token === draft.checkoutToken);
       if (existing) return { order: existing, created: false };
+      for (const { productId, quantity } of draft.lines) {
+        const left = productId ? opts.stock?.get(productId) : undefined;
+        if (productId && left !== undefined && left < quantity) throw new OutOfStockError(productId);
+      }
+      for (const { productId, quantity } of draft.lines) {
+        const left = productId ? opts.stock?.get(productId) : undefined;
+        if (productId && left !== undefined) opts.stock!.set(productId, left - quantity);
+      }
       const order = {
         id: randomUUID(),
         token: draft.checkoutToken,
@@ -209,6 +221,25 @@ describe("checkout service", () => {
     const hidden = product();
     const s2 = setup([hidden], { shown: [] });
     expect(await place(s2, s2.addCart([{ product: hidden, quantity: 1 }]), "cod")).toEqual({ ok: false, reason: "unavailable_items" });
+  });
+
+  it("reports a product that sold out at placement and keeps the basket (ADR-023)", async () => {
+    const train = product();
+    const s = setup([train], { stock: new Map([[train.id, 1]]) });
+    const cartId = s.addCart([{ product: train, quantity: 2 }]);
+    expect(await place(s, cartId, "cod")).toEqual({ ok: false, reason: "out_of_stock", productNames: ["Wooden Train"] });
+    expect(s.carts.has(cartId)).toBe(true);
+    expect(s.orders.size).toBe(0);
+  });
+
+  it("a replayed token returns the order that took the last unit, not 'sold out'", async () => {
+    const train = product();
+    const s = setup([train], { stock: new Map([[train.id, 1]]) });
+    const cartId = s.addCart([{ product: train, quantity: 1 }]);
+    const token = randomUUID();
+    const first = await place(s, cartId, "online", token);
+    const replay = await place(s, cartId, "online", token);
+    expect(first.ok && replay.ok && first.order.id === replay.order.id).toBe(true);
   });
 
   it("needs a basket and a pincode we deliver to", async () => {

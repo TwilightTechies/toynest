@@ -10,3 +10,4 @@ export * from "./merchandising-repository";
 export * from "./session-client";
 export * from "./customer-session";
 export * from "./store-settings";
+export * from "./inventory-repository";

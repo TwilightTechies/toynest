@@ -1,5 +1,7 @@
 import "server-only";
 import {
+  availability,
+  checkStock,
   formatMoney,
   markNotForSale,
   priceCart,
@@ -45,6 +47,12 @@ export interface BasketLineView {
   personalisationName: string | null;
   quantity: number;
   available: boolean;
+  // Stock (ADR-023): "Sold out", "Only 2 left", or null when there's plenty or it isn't tracked.
+  stockNote: string | null;
+  // The basket wants more of this product than is left: checkout is blocked until it's reduced.
+  overStock: boolean;
+  // false once the basket holds every unit left, so "+" is disabled.
+  canAddOne: boolean;
   unitPrice: string | null;
   lineTotal: string | null;
 }
@@ -63,23 +71,39 @@ export interface BasketView {
   total: string;
   totalMinor: number;
   hasUnavailable: boolean;
+  hasStockProblem: boolean;
 }
 
 // Loads the basket and prices it with core priceCart from the CURRENT product rows and zones.
 // Nothing priced here comes from the browser.
 export async function getBasketView(): Promise<BasketView | null> {
-  const { carts, products, categories, shippingZones, images } = await getRepositories();
+  const { carts, products, categories, shippingZones, images, inventory } = await getRepositories();
   const cart = await currentCart(carts);
   if (!cart) return null;
 
   const productIds = [...new Set(cart.lines.map((line) => line.productId))];
-  const [rows, zones, categoryList, photos] = await Promise.all([
+  const [rows, zones, categoryList, photos, levels] = await Promise.all([
     products.findByIds(productIds),
     shippingZones.list(),
     categories.list(),
     // One query for every line's photos.
     images.listForProducts(productIds),
+    inventory.levels(productIds),
   ]);
+  // Summed per product across lines (one toy with two different names counts twice).
+  const short = new Set(checkStock(cart.lines, levels).map((s) => s.productId));
+  const inBasket = new Map<string, number>();
+  for (const line of cart.lines) inBasket.set(line.productId, (inBasket.get(line.productId) ?? 0) + line.quantity);
+  const canAddOne = (productId: string) => {
+    const stock = levels.get(productId) ?? null;
+    return stock === null || (inBasket.get(productId) ?? 0) < stock;
+  };
+  const stockNote = (productId: string): string | null => {
+    const state = availability(levels.get(productId) ?? null);
+    if (state.kind === "sold_out") return "Sold out";
+    if (state.kind === "low" || (state.kind === "in_stock" && short.has(productId))) return `Only ${state.units} left`;
+    return null;
+  };
   const zone = cart.pincode ? resolveShippingZone(cart.pincode, zones) : null;
   const priced = priceCart({ lines: cart.lines, products: await withSaleStatus(rows), zone });
   const categorySlugs = new Map(categoryList.map((category) => [category.id, category.slug]));
@@ -99,6 +123,9 @@ export async function getBasketView(): Promise<BasketView | null> {
       personalisationName: p.line.personalisationName,
       quantity: p.line.quantity,
       available: p.status === "ok",
+      stockNote: p.status === "ok" ? stockNote(p.line.productId) : null,
+      overStock: p.status === "ok" && short.has(p.line.productId),
+      canAddOne: canAddOne(p.line.productId),
       unitPrice: p.status === "ok" ? formatMoney(p.unitPriceMinor) : null,
       lineTotal: p.status === "ok" ? formatMoney(p.lineTotalMinor) : null,
     })),
@@ -114,6 +141,7 @@ export async function getBasketView(): Promise<BasketView | null> {
     // For rules that compare amounts (e.g. the Cash on Delivery limit); display uses `total`.
     totalMinor: priced.totalMinor,
     hasUnavailable: priced.lines.some((p) => p.status === "unavailable"),
+    hasStockProblem: priced.lines.some((p) => p.status === "ok" && short.has(p.line.productId)),
   };
 }
 

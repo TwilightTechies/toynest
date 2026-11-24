@@ -27,6 +27,11 @@ async function Basket() {
   return (
     <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
       <section aria-label="Items">
+        {basket.hasStockProblem && (
+          <p role="alert" className="mb-4 rounded-xl border border-accent bg-surface px-4 py-3 text-sm font-semibold">
+            Some items have fewer left than you&apos;ve chosen. Reduce the quantity to check out.
+          </p>
+        )}
         {basket.hasUnavailable && (
           <p className="mb-4 rounded-xl bg-surface px-4 py-3 text-sm">
             Some items are no longer available. They aren&apos;t included in your total; you can remove them.
@@ -70,6 +75,12 @@ function Line({ line }: { line: BasketLineView }) {
             )}
             {line.unitPrice && <p className="mt-0.5 text-sm text-muted">{line.unitPrice} each</p>}
             {!line.available && <p className="mt-0.5 text-sm font-semibold text-accent">No longer available</p>}
+            {line.stockNote && (
+              <p className={`mt-0.5 text-sm font-semibold ${line.overStock ? "text-accent" : "text-sage-strong"}`}>
+                {line.stockNote}
+                {line.overStock && " (reduce the quantity to check out)"}
+              </p>
+            )}
           </div>
           {line.lineTotal && <p className="shrink-0 font-bold tabular-nums">{line.lineTotal}</p>}
         </div>
@@ -91,7 +102,7 @@ function Line({ line }: { line: BasketLineView }) {
               <form action={updateQuantity}>
                 <input type="hidden" name="lineId" value={line.lineId} />
                 <input type="hidden" name="quantity" value={line.quantity + 1} />
-                <button type="submit" disabled={line.quantity >= 10} className={stepClass} aria-label="One more">
+                <button type="submit" disabled={line.quantity >= 10 || !line.canAddOne} className={stepClass} aria-label="One more">
                   +
                 </button>
               </form>
@@ -133,6 +144,8 @@ function Summary({ basket }: { basket: BasketView }) {
 
       {basket.hasUnavailable ? (
         <p className="text-sm">Remove the items that are no longer available to check out.</p>
+      ) : basket.hasStockProblem ? (
+        <p className="text-sm">Reduce the quantities marked above to check out.</p>
       ) : (
         <Link href="/checkout" className={`${buttonClass("primary")} min-h-11`}>
           Checkout

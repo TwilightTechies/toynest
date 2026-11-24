@@ -28,7 +28,7 @@ async function NewProduct() {
   return (
     <ProductForm
       categories={categories}
-      product={{ name: "", slug: "", description: "", categoryId: "", price: "", attributes: {} }}
+      product={{ name: "", slug: "", description: "", categoryId: "", price: "", stock: "", attributes: {} }}
     />
   );
 }

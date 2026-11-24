@@ -84,6 +84,7 @@ async function EditProduct({ params, searchParams }: PageProps<"/admin/products/
             description: product.description,
             categoryId: product.categoryId,
             price: formatRupeesInput(product.priceMinor),
+            stock: product.stock === null ? "" : String(product.stock),
             attributes: product.attributes,
           }}
         />

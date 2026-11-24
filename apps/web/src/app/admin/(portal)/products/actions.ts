@@ -1,6 +1,6 @@
 "use server";
 
-import { parseRupees, slugify, type AdminFailure, type ProductInput } from "@toynest/core";
+import { parseRupees, parseStock, slugify, type AdminFailure, type ProductInput } from "@toynest/core";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -48,6 +48,8 @@ function failureState(failure: AdminFailure, values?: Record<string, string>): P
       };
     case "not_found":
       return { message: "This product no longer exists.", problems: [] };
+    case "has_orders":
+      return { message: "This product has been ordered, so it can't be deleted. Archive it instead.", problems: [] };
   }
 }
 
@@ -59,6 +61,8 @@ export async function saveProduct(_previous: ProductFormState, formData: FormDat
   if (priceMinor === null) {
     return { message: "Enter the price in rupees, for example 599 or 599.50.", problems: [], values };
   }
+  const stock = parseStock(values.stock ?? "");
+  if (!stock.ok) return { message: stock.error, problems: [], values };
   const name = (values.name ?? "").trim();
   const input: ProductInput = {
     name,
@@ -67,6 +71,7 @@ export async function saveProduct(_previous: ProductFormState, formData: FormDat
     categoryId: values.categoryId ?? "",
     priceMinor,
     attributes: attributesFrom(values),
+    stock: stock.stock,
   };
 
   const result = values.id
@@ -75,6 +80,9 @@ export async function saveProduct(_previous: ProductFormState, formData: FormDat
   if (!result.ok) return failureState(result, values);
 
   updateTag(CATALOG_CACHE_TAG);
+  // A new product goes back to the list (newest first, so it's at the top) with a confirmation toast;
+  // an edit stays on the product page. Failures returned above keep the admin on the form.
+  if (!values.id) redirect(`/admin/products?created=${result.product.id}`);
   redirect(`/admin/products/${result.product.id}?saved=1`);
 }
 
@@ -82,6 +90,8 @@ const StatusFormSchema = z.object({
   id: z.uuid(),
   version: z.string().min(1),
   action: z.enum(["publish", "unpublish", "archive", "restore"]),
+  // Archive from the product list returns there (ADR-023); otherwise back to the product page.
+  returnTo: z.literal("list").optional(),
 });
 
 export async function changeStatus(_previous: ProductFormState, formData: FormData): Promise<ProductFormState> {
@@ -93,6 +103,7 @@ export async function changeStatus(_previous: ProductFormState, formData: FormDa
   if (!result.ok) return failureState(result);
 
   updateTag(CATALOG_CACHE_TAG);
+  if (parsed.data.returnTo === "list") redirect(`/admin/products?archived=1`);
   redirect(`/admin/products/${result.product.id}?status=${result.product.status}`);
 }
 
@@ -115,3 +126,23 @@ export async function setFeatured(_previous: ProductFormState, formData: FormDat
   redirect(`/admin/products/${result.product.id}?featured=${result.product.featured ? "on" : "off"}`);
 }
 
+const DeleteFormSchema = z.object({ id: z.uuid(), version: z.string().min(1) });
+
+// Delete from the product list (ADR-023). Only never-ordered products; the service and the database
+// trigger both refuse the rest, which the list offers to archive instead.
+export async function deleteProduct(_previous: ProductFormState, formData: FormData): Promise<ProductFormState> {
+  const { catalogue } = await requireAdmin();
+  const parsed = DeleteFormSchema.safeParse(formValues(formData));
+  if (!parsed.success) return { message: "That request wasn't valid. Reload the page and try again.", problems: [] };
+
+  const result = await catalogue.delete(parsed.data.id, parsed.data.version);
+  if (!result.ok) {
+    if (result.reason === "conflict") {
+      return { message: "This product changed since the list loaded. Reload the page and try again.", problems: [] };
+    }
+    return failureState(result);
+  }
+
+  updateTag(CATALOG_CACHE_TAG);
+  redirect("/admin/products?deleted=1");
+}
