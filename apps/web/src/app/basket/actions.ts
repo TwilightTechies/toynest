@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  checkStock,
   MAX_LINE_QUANTITY,
   PincodeSchema,
   SlugSchema,
@@ -29,7 +30,7 @@ export async function addToBasket(_previous: AddToBasketState, formData: FormDat
   if (!slug.success) return { error: "That product can't be added.", field: null };
   if (!quantity.success) return { error: `Choose a quantity from 1 to ${MAX_LINE_QUANTITY}.`, field: "quantity" };
 
-  const { products } = await getRepositories();
+  const { products, inventory } = await getRepositories();
   const product = await products.findBySlug(slug.data);
   // Same rule as the product page: drafts, archived products and hidden categories are not for sale.
   if (!product || (await productsForSale([product])).length === 0) {
@@ -41,6 +42,21 @@ export async function addToBasket(_previous: AddToBasketState, formData: FormDat
   if (!personalisation.ok) return { error: personalisation.error, field: "name" };
 
   const { cart, carts } = await cartForWrite();
+  // Stock (ADR-023): what's already in the basket counts too. A warning, not a reservation: the
+  // order itself is what takes the units, in place_order().
+  const levels = await inventory.levels([product.id]);
+  const lines = [...cart.lines, { productId: product.id, quantity: quantity.data }];
+  const [short] = checkStock(lines, levels);
+  if (short) {
+    const inBasket = short.wanted - quantity.data;
+    return {
+      error:
+        short.available === 0
+          ? "Sorry, this is sold out."
+          : `Only ${short.available} left${inBasket > 0 ? ` and ${inBasket} already in your basket` : ""}.`,
+      field: "quantity",
+    };
+  }
   await carts.addLine(cart.id, {
     productId: product.id,
     personalisationName: personalisation.name,
@@ -57,6 +73,13 @@ export async function updateQuantity(formData: FormData): Promise<void> {
   const quantity = QuantityField.safeParse(formData.get("quantity"));
   if (!line.success || !quantity.success) return;
   const { cart, carts } = await cartForWrite();
+  // Stock (ADR-023): an increase past what's left is ignored; the basket page shows "Only n left".
+  const target = cart.lines.find((l) => l.id === line.data.lineId);
+  if (target && quantity.data > target.quantity) {
+    const { inventory } = await getRepositories();
+    const lines = cart.lines.map((l) => (l.id === target.id ? { ...l, quantity: quantity.data } : l));
+    if (checkStock(lines, await inventory.levels([target.productId])).length > 0) return;
+  }
   // Scoped by this shopper's cart id: a line id from another basket is simply not found.
   await carts.setQuantity(cart.id, line.data.lineId, quantity.data);
   revalidatePath("/", "layout");

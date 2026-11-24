@@ -29,7 +29,7 @@ const ImageRowSchema = z.object({
   height: z.number().int(),
 });
 
-const fileFor = (path: string, size: "large" | "small") => `${path}-${size}.webp`;
+export const fileFor = (path: string, size: "large" | "small") => `${path}-${size}.webp`;
 
 // getPublicUrl only formats a string (no network call): <project>/storage/v1/object/public/<bucket>/<file>.
 function toImage(client: SupabaseClient, row: unknown): ProductImage {

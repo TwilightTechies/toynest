@@ -1,6 +1,7 @@
 import {
   CheckoutOrderSchema,
   ConflictError,
+  OutOfStockError,
   type AdminOrderRepository,
   type CheckoutOrder,
   type CheckoutOrderRepository,
@@ -136,7 +137,14 @@ export function createSupabaseCheckoutRepository(client: SupabaseClient, provide
           })),
         },
       });
-      if (result.error) throw toRepositoryError(result, "checkout.place");
+      if (result.error) {
+        // place_order() raises 'out_of_stock' with the product id as detail (ADR-023); nothing was written.
+        if (result.error.message === "out_of_stock") {
+          const productId = z.uuid().safeParse((result.error as { details?: unknown }).details);
+          if (productId.success) throw new OutOfStockError(productId.data);
+        }
+        throw toRepositoryError(result, "checkout.place");
+      }
       const id = z.uuid().parse(result.data);
       const order = await get(id);
       if (!order) throw new Error("checkout.place: order missing after insert");

@@ -22,3 +22,19 @@ export class SlugTakenError extends Error {
     this.name = "SlugTakenError";
   }
 }
+
+// place_order() found too few units of a tracked product (ADR-023). Nothing was written.
+export class OutOfStockError extends Error {
+  constructor(readonly productId: string) {
+    super(`Out of stock: ${productId}`);
+    this.name = "OutOfStockError";
+  }
+}
+
+// The product appears in at least one order, so it can only be archived, never deleted (ADR-023).
+export class HasOrdersError extends Error {
+  constructor(readonly productId: string) {
+    super(`Product has orders: ${productId}`);
+    this.name = "HasOrdersError";
+  }
+}

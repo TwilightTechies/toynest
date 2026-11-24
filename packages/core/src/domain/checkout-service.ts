@@ -1,4 +1,4 @@
-import { ConflictError } from "../errors";
+import { ConflictError, OutOfStockError } from "../errors";
 import type { CartRepository } from "../ports/cart-repository";
 import type { CategoryRepository } from "../ports/category-repository";
 import type { CheckoutOrderRepository, PaymentProvider, PaymentResult } from "../ports/checkout";
@@ -21,6 +21,8 @@ export type CheckoutFailure =
   | { ok: false; reason: "empty_basket" }
   // Something in the basket was archived or its category hidden since it was added.
   | { ok: false; reason: "unavailable_items" }
+  // Fewer units left than the basket wants (ADR-023); names are for the message.
+  | { ok: false; reason: "out_of_stock"; productNames: string[] }
   | { ok: false; reason: "no_delivery" }
   | { ok: false; reason: "cod_not_available" }
   | { ok: false; reason: "not_found" }
@@ -135,7 +137,20 @@ export function createCheckoutService({ carts, products, categories, zones, orde
         ),
       };
 
-      const { order } = await orders.place(draft);
+      // Stock is checked only inside place_order(), in the same transaction that writes the order
+      // (ADR-023). No pre-check here: it would race other shoppers anyway, and on a replayed checkout
+      // token it would report "sold out" for the order that took the last unit. The basket page warns
+      // about stock earlier.
+      const names = new Map(draft.lines.map((line) => [line.productId, line.productName]));
+      let order: CheckoutOrder;
+      try {
+        ({ order } = await orders.place(draft));
+      } catch (error) {
+        if (error instanceof OutOfStockError) {
+          return { ok: false, reason: "out_of_stock", productNames: [names.get(error.productId) ?? "An item"] };
+        }
+        throw error;
+      }
       if (order.paymentMethod === "cod") await clearCart(order.cartId);
       return { ok: true, order };
     },

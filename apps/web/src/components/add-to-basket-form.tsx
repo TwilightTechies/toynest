@@ -9,8 +9,18 @@ const initial: AddToBasketState = { error: null, field: null };
 
 // A form posting to a server action: it works before (and without) client JS. useActionState only
 // adds inline errors and a pending state. On success the action redirects to the basket.
-export function AddToBasketForm({ slug, personalisable }: { slug: string; personalisable: boolean }) {
+// maxQuantity: the most the quantity list offers (stock left, ADR-023); the server re-checks anyway.
+export function AddToBasketForm({
+  slug,
+  personalisable,
+  maxQuantity = MAX_LINE_QUANTITY,
+}: {
+  slug: string;
+  personalisable: boolean;
+  maxQuantity?: number;
+}) {
   const [state, action, pending] = useActionState(addToBasket, initial);
+  const options = Math.max(1, Math.min(MAX_LINE_QUANTITY, maxQuantity));
 
   return (
     <form action={action} className="mt-6 flex flex-col gap-4" noValidate>
@@ -37,7 +47,7 @@ export function AddToBasketForm({ slug, personalisable }: { slug: string; person
         <label className={`w-24 ${labelClass}`}>
           Quantity
           <select name="quantity" defaultValue="1" className={fieldClass}>
-            {Array.from({ length: MAX_LINE_QUANTITY }, (_, i) => i + 1).map((n) => (
+            {Array.from({ length: options }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>

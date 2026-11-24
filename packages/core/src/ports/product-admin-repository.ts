@@ -24,4 +24,10 @@ export interface ProductAdminRepository {
   setStatus(id: string, status: ProductStatus, expectedVersion: string): Promise<AdminProduct>;
   // Same version check as setStatus (ADR-021).
   setFeatured(id: string, featured: boolean, expectedVersion: string): Promise<AdminProduct>;
+  // Which of these products appear in at least one order line (ADR-023)? One query for a list page.
+  orderedAmong(ids: string[]): Promise<Set<string>>;
+  // Deletes the row (photo rows and cart lines cascade), then its photo files (best effort: a file
+  // left behind is logged for the orphan-cleanup job). ConflictError if the version moved or the row
+  // is gone; HasOrdersError if it was ordered (the database refuses).
+  delete(id: string, expectedVersion: string): Promise<void>;
 }

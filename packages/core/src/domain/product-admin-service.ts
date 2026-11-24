@@ -1,4 +1,4 @@
-import { ConflictError, SlugTakenError } from "../errors";
+import { ConflictError, HasOrdersError, SlugTakenError } from "../errors";
 import type { CategoryRepository } from "../ports/category-repository";
 import type { ProductAdminRepository } from "../ports/product-admin-repository";
 import type { Category } from "./category";
@@ -17,9 +17,12 @@ export type AdminFailure =
   | { ok: false; reason: "invalid"; problems: string[] }
   | { ok: false; reason: "not_found" }
   | { ok: false; reason: "conflict" }
-  | { ok: false; reason: "slug_taken" };
+  | { ok: false; reason: "slug_taken" }
+  // Ordered at least once, so it can only be archived (ADR-023).
+  | { ok: false; reason: "has_orders" };
 
 export type AdminResult = { ok: true; product: AdminProduct } | AdminFailure;
+export type AdminDeleteResult = { ok: true; name: string } | AdminFailure;
 
 // Business rules for catalogue editing (ADR-016). Who may call it is decided outside: the web app
 // checks the admin role, and the repository runs with the admin's session so RLS checks it again.
@@ -93,6 +96,28 @@ export function createProductAdminService(products: ProductAdminRepository, cate
       if (current.version !== expectedVersion) return { ok: false, reason: "conflict" };
       if (current.featured === featured) return { ok: true, product: current };
       return write(() => products.setFeatured(id, featured, expectedVersion));
+    },
+
+    // For the list: which rows may be deleted (never ordered) and which only archived.
+    async orderedAmong(ids: string[]): Promise<Set<string>> {
+      return ids.length === 0 ? new Set() : products.orderedAmong(ids);
+    },
+
+    // Only a product nobody ever ordered may be deleted; the rest are archived (ADR-023). The check
+    // here gives the admin a clear answer; the database trigger enforces it whatever the caller.
+    async delete(id: string, expectedVersion: string): Promise<AdminDeleteResult> {
+      const current = await products.get(id);
+      if (!current) return { ok: false, reason: "not_found" };
+      if (current.version !== expectedVersion) return { ok: false, reason: "conflict" };
+      if ((await products.orderedAmong([id])).has(id)) return { ok: false, reason: "has_orders" };
+      try {
+        await products.delete(id, expectedVersion);
+        return { ok: true, name: current.name };
+      } catch (error) {
+        if (error instanceof ConflictError) return { ok: false, reason: "conflict" };
+        if (error instanceof HasOrdersError) return { ok: false, reason: "has_orders" };
+        throw error;
+      }
     },
   };
 }

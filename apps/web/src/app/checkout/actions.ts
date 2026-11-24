@@ -49,6 +49,13 @@ export async function placeOrder(_previous: CheckoutFormState, formData: FormDat
           fieldErrors: {},
           values,
         };
+      case "out_of_stock":
+        // ADR-023: decided inside place_order(); nothing was written and the basket is unchanged.
+        return {
+          message: `Sorry, ${result.productNames.join(", ")} sold out while you were checking out. Update your basket, then try again.`,
+          fieldErrors: {},
+          values,
+        };
       case "no_delivery":
         return { message: null, fieldErrors: { pincode: "We don't deliver to this pincode yet" }, values };
       case "cod_not_available":

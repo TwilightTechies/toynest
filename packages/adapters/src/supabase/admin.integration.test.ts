@@ -60,6 +60,7 @@ describe.skipIf(!ready)("Admin catalogue (RLS + optimistic concurrency)", () => 
     description: "",
     categoryId,
     priceMinor: 49900,
+    stock: null,
     attributes: {},
     ...overrides,
   });
@@ -169,15 +170,16 @@ describe.skipIf(!ready)("Admin catalogue (RLS + optimistic concurrency)", () => 
     await expect(admin.products.create(input({ slug: existing.slug }))).rejects.toThrow(SlugTakenError);
   });
 
-  it("there is no delete policy: even an admin can't delete a product", async () => {
-    const created = await admin.products.create(input({ slug: `admin-test-nodelete-${run}` }));
+  // ADR-023 replaced ADR-016's "no delete policy": admins may delete never-ordered products (the
+  // ordered case is covered in inventory.integration.test.ts); signed-in non-admins still can't.
+  it("delete policy: a signed-in non-admin can't delete; an admin can delete a never-ordered product", async () => {
+    const created = await admin.products.create(input({ slug: `admin-test-delete-${run}` }));
     productIds.push(created.id);
-    // A raw client signed in as the admin: the port has no delete, so go around it on purpose.
-    const adminUser = users.find((user) => user.id === adminUserId)!;
-    const raw = createSupabaseClient({ url: env!.SUPABASE_URL, key: env!.SUPABASE_ANON_KEY!, timeoutMs: 15000 });
-    expect((await raw.auth.signInWithPassword({ email: adminUser.email, password: adminUser.password })).error).toBeNull();
-    await raw.from("products").delete().eq("id", created.id);
+    // RLS hides the row from the non-admin's DELETE: zero rows, reported as a conflict.
+    await expect(plain.products.delete(created.id, created.version)).rejects.toBeInstanceOf(ConflictError);
     expect(await admin.products.get(created.id)).not.toBeNull();
+    await admin.products.delete(created.id, created.version);
+    expect(await admin.products.get(created.id)).toBeNull();
   });
 
   it("removing the admin_users row revokes access on the very next request", async () => {

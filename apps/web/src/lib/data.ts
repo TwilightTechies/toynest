@@ -9,6 +9,7 @@ import {
   createSupabaseCheckoutRepository,
   createSupabaseClient,
   createSupabaseCustomerProvisioning,
+  createSupabaseInventoryRepository,
   createSupabaseSmsOutbox,
   createSupabaseStoreSettingsAdmin,
   createSupabaseRepositories,
@@ -23,6 +24,7 @@ import type {
   Customer,
   CustomerProvisioning,
   CustomerRepository,
+  InventoryRepository,
   MerchandisingRepository,
   OrderRepository,
   PaymentProvider,
@@ -47,6 +49,8 @@ export interface Repositories {
   images: ProductImageRepository;
   // Home-page shelves: Featured and Best sellers (ADR-021).
   merchandising: MerchandisingRepository;
+  // Stock levels for the shop (ADR-023); place_order() enforces them.
+  inventory: InventoryRepository;
   // Checkout (ADR-019): orders written by the server only, and the payment gateway (mock for now).
   checkoutOrders: CheckoutOrderRepository;
   payments: PaymentProvider;
@@ -82,6 +86,7 @@ export async function getRepositories(): Promise<Repositories> {
     return {
       source: "supabase",
       ...createSupabaseRepositories(client),
+      inventory: createSupabaseInventoryRepository(client),
       checkoutOrders: createSupabaseCheckoutRepository(client, payments.name),
       payments,
       demoCustomers: () => listDemoCustomers(client),
@@ -110,6 +115,8 @@ async function loadSampleRepositories(): Promise<Repositories> {
     shippingZones: await loadShippingZones(path.join(dataDir, "shipping-zones.json")),
     // Sample mode has no photos: every product shows its category placeholder (ADR-017).
     images: { listForProducts: async () => new Map() },
+    // Sample products have no stock: every one is "not tracked" (ADR-023).
+    inventory: { levels: async (ids) => new Map(ids.map((id) => [id, null])) },
     checkoutOrders: createInMemoryCheckoutRepository(),
     payments: createMockPaymentProvider(),
     demoCustomers: async () => support.sampleCustomers,

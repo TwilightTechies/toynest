@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Category } from "./category";
+import { StockSchema } from "./inventory";
 import { ProductSchema, SlugSchema, type ProductStatus } from "./product";
 
 // Admin catalogue editing (ADR-016). The storefront's Product type stays read-only; admins work on
@@ -19,6 +20,8 @@ export const ProductInputSchema = z.object({
   priceMinor: z.number().int().nonnegative().max(MAX_PRICE_MINOR),
   // Category attributes such as { ageRange: "3-5 years" }. Empty values are dropped before parsing.
   attributes: z.record(z.string().min(1).max(40), attributeValue),
+  // Units on hand; null = not tracked (ADR-023).
+  stock: StockSchema,
 });
 
 export type ProductInput = z.infer<typeof ProductInputSchema>;
@@ -26,6 +29,7 @@ export type ProductInput = z.infer<typeof ProductInputSchema>;
 export const AdminProductSchema = ProductSchema.extend({
   // Shown on the home page's Featured shelf when also active and in a visible category (ADR-021).
   featured: z.boolean(),
+  stock: StockSchema,
   // The row's updated_at exactly as the database returned it (microsecond precision). It is compared,
   // never parsed: a JS Date keeps only milliseconds and would never match.
   version: z.string().min(1),

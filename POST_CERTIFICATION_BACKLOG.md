@@ -38,7 +38,8 @@ One phase per project session, each on its own `feat/` branch:
 - [x] Home page sections: hero, shop by category, new arrivals, under ₹500 (ADR-012, ADR-014)
 - [x] Home page: Featured (admin-picked) and Best sellers (units sold, 90 days) (ADR-021)
 - [x] Product detail page, category browsing, price filter, sorting, pagination (ADR-012)
-- [ ] Product variants (colour/size) selection UI
+- [ ] Product variants (colour/size) selection UI (stock then moves per variant, ADR-023)
+- [ ] "Sold out" on listing cards (needs stock in search_products)
 - [ ] Customised products: personalised text, colour, instructions, image upload (Supabase Storage)
 - [x] Cart: add/remove, quantities, personalisation (name text), subtotal and delivery by pincode zone (shipping_zones table), total (ADR-015)
 - [ ] Expire abandoned guest carts (scheduled job on carts.updated_at)
@@ -64,12 +65,17 @@ One phase per project session, each on its own `feat/` branch:
 - [ ] AI-suggested alt text for photos (a draft until an admin approves it)
 - [x] Phase 3: categories: show/hide, order, menu labels, required details (ADR-018)
 - [ ] Category schedule (show from / hide after a date) for seasonal ranges
-- [ ] Stock and shipping zones
+- [x] Stock per product, optional; reduced at order placement (ADR-023)
+- [ ] Shipping zones admin
 - [x] Featured flag on the product page and list (ADR-021)
 - [ ] Variants (colour/size)
 - [ ] Audit trail: who changed what (created_by / updated_by or a change log)
 - [ ] Dashboard: counts, sales summary, low-stock, recent orders
-- [ ] Inventory management
+- [x] Inventory: stock per product with low/sold-out badges (ADR-023)
+- [x] Delete never-ordered products from the list; ordered ones offer Archive (ADR-023)
+- [ ] Restock when an order is cancelled (needs the cancel flow)
+- [ ] Stock history / adjustments log (who changed stock and why)
+- [ ] Low-stock list on the admin dashboard
 - [x] Read-only order list (ADR-019)
 - [ ] Order management: status updates, dispatch, payment tracking
 

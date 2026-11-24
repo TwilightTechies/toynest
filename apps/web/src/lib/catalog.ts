@@ -16,8 +16,10 @@ import {
   type Product,
   type ProductImage,
   type ProductSearchQuery,
+  type Stock,
 } from "@toynest/core";
 import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { getRepositories, type DataSource } from "./data";
 
 // Every cached catalogue read carries this tag; admin writes call updateTag(CATALOG_CACHE_TAG) so
@@ -64,6 +66,8 @@ export interface CatalogPage {
 }
 
 export interface ProductDetail extends CatalogItem {
+  // For the live stock read next to the cached details (ADR-023).
+  id: string;
   // Every photo in display order (the gallery); empty = placeholder art.
   images: CatalogPhoto[];
   attributes: { label: string; value: string }[];
@@ -176,6 +180,7 @@ export async function getProduct(slug: string): Promise<ProductDetail | null> {
   const photos = await photosFor([product]);
   return {
     ...toItem(product, categoriesById, photos),
+    id: product.id,
     images: (photos.get(product.id) ?? []).map(toPhoto),
     attributes: Object.entries(product.attributes).map(([key, value]) =>
       key === "personalisation" && value === "name"
@@ -250,4 +255,12 @@ export async function getMenuCategories(): Promise<{ href: string; label: string
     href: `/products?category=${category.slug}`,
     label: menuLabelOf(category),
   }));
+}
+
+// Stock for the product page (ADR-023). Deliberately NOT cached: orders change it all the time, and
+// the cached details above are only invalidated by admin edits. Rendered inside its own Suspense.
+export async function getStock(productId: string): Promise<Stock> {
+  await connection();
+  const { inventory } = await getRepositories();
+  return (await inventory.levels([productId])).get(productId) ?? null;
 }
